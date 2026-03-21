@@ -118,13 +118,14 @@ export const ChatWidget = () => {
           ref={messagesContainerRef}
         >
           {/* Initial greeting */}
-          <div className="flex gap-3">
-            <span className="text-accent-green flex-shrink-0">[PAWWWL_]</span>
-            <p className="text-on-surface">
+          <div className="flex flex-col gap-1">
+            <span className="text-accent-green flex-shrink-0 text-[10px] tracking-widest">
+              [PAWWWL_]
+            </span>
+            <p className="text-on-surface pl-2 border-l border-outline/30">
               Hey! What would you like to know about me?
             </p>
           </div>
-
           {/* Quick question chips */}
           {showChips && (
             <div className="flex flex-wrap gap-2 pl-1">
@@ -143,15 +144,15 @@ export const ChatWidget = () => {
 
           {/* Conversation history */}
           {messages.map((msg, i) => (
-            <div key={i} className="flex gap-3">
+            <div key={i} className="flex flex-col gap-1">
               <span
-                className={`flex-shrink-0 ${
+                className={`flex-shrink-0 text-[10px] tracking-widest ${
                   msg.role === "user" ? "text-primary" : "text-accent-green"
                 }`}
               >
                 {msg.role === "user" ? "[VISITOR]" : "[PAWWWL_]"}
               </span>
-              <div className="text-on-surface prose prose-invert prose-sm max-w-none">
+              <div className="text-on-surface prose prose-invert prose-sm max-w-none pl-2 border-l border-outline/30">
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
               </div>
             </div>
@@ -159,9 +160,11 @@ export const ChatWidget = () => {
 
           {/* Streaming response */}
           {streamingText && (
-            <div className="flex gap-3">
-              <span className="text-accent-green flex-shrink-0">[PAWWWL_]</span>
-              <p className="text-on-surface whitespace-pre-wrap">
+            <div className="flex flex-col gap-1">
+              <span className="text-accent-green flex-shrink-0 text-[10px] tracking-widest">
+                [PAWWWL_]
+              </span>
+              <p className="text-on-surface whitespace-pre-wrap pl-2 border-l border-outline/30">
                 {streamingText}
                 <span className="animate-pulse">▋</span>
               </p>
@@ -170,9 +173,11 @@ export const ChatWidget = () => {
 
           {/* Loading indicator */}
           {isLoading && !streamingText && (
-            <div className="flex gap-3">
-              <span className="text-accent-green flex-shrink-0">[PAWWWL_]</span>
-              <p className="text-on-surface-variant animate-pulse">
+            <div className="flex flex-col gap-1">
+              <span className="text-accent-green flex-shrink-0 text-[10px] tracking-widest">
+                [PAWWWL_]
+              </span>
+              <p className="text-on-surface-variant animate-pulse pl-2 border-l border-outline/30">
                 processing...
               </p>
             </div>
