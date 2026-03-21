@@ -1,0 +1,36 @@
+export const SKILLS = [
+  { label: "Web", type: "domain" },
+  { label: "TypeScript", type: "language" },
+  { label: "Next.js", type: "framework" },
+  { label: "C#", type: "language" },
+  { label: "NET", type: "framework" },
+  { label: "Mobile", type: "domain" },
+  { label: "React Native", type: "framework" },
+  { label: "Data", type: "domain" },
+  { label: "SQL", type: "language" },
+  { label: "Mongo", type: "database" },
+  { label: "ElasticSearch", type: "database" },
+  { label: "Cloud", type: "domain" },
+  { label: "Azure", type: "cloud" },
+];
+
+export const ABOUT_ME = {
+  pets: [
+    { name: "Sozo", type: "cat" },
+    { name: "Silver", type: "cat" },
+  ],
+  fuel: [
+    { name: "Coffee", type: "beverage" },
+    { name: "Nuts", type: "food" },
+  ],
+  location: {
+    city: "Denver",
+    timezone: "MST",
+    state: "Colorado",
+    country: "USA",
+  },
+};
+
+export const BIO = {
+  name: "Paul",
+};
