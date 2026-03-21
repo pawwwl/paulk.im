@@ -81,7 +81,7 @@ export default function Home() {
               <div className="absolute inset-0 bg-primary/10 mix-blend-overlay"></div>
             </div>
             {/* <!-- Quirky Accent --> */}
-            <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-surface-container border border-primary/30 flex items-center justify-center p-8 z-20 -rotate-6 shadow-2xl">
+            <div className="absolute -bottom-10 right-5 w-48 h-48 bg-surface-container border border-primary/30 flex items-center justify-center p-8 z-20 -rotate-6 shadow-2xl">
               <p className="text-primary font-mono text-[10px] text-center leading-tight tracking-widest uppercase">
                 Status:
                 <br />
