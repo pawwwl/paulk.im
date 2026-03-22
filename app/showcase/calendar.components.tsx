@@ -236,7 +236,7 @@ export const CalendarMonth = ({ days, onSelectDate }: Props) => (
               <ol className="mt-2">
                 {day.events.slice(0, 2).map((event) => (
                   <li key={event.id}>
-                    <a href={event.href} className="group flex">
+                    <a href={"#"} className="group flex">
                       <p className="flex-auto truncate font-medium text-gray-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
                         {event.name}
                       </p>
@@ -327,7 +327,7 @@ export const CalendarMonth = ({ days, onSelectDate }: Props) => (
                 </time>
               </div>
               <a
-                href={event.href}
+                href={""}
                 className="ml-6 flex-none self-center rounded-md bg-white px-3 py-2 font-semibold text-gray-900 opacity-0 shadow-xs ring-1 ring-inset ring-gray-300 group-hover:opacity-100 dark:bg-white/10 dark:text-white dark:ring-white/5"
               >
                 Edit
@@ -487,7 +487,7 @@ export const CalendarWeek = ({
                       className={`relative mt-px flex sm:col-start-${colIndex + 1}`}
                     >
                       <a
-                        href={event.href}
+                        href={""}
                         className={`group absolute inset-1 flex flex-col overflow-y-auto rounded-lg p-2 text-xs/5 ${color}`}
                       >
                         <p className="order-1 font-semibold">{event.name}</p>
