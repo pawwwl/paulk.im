@@ -1,56 +1,15 @@
 import { ChatWidget } from "@/components/chat-widget";
 import { SKILLS } from "@/lib/data";
 import Image from "next/image";
-import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="bg-background text-on-surface font-body selection:bg-primary selection:text-on-primary">
-      <div className="scanline"></div>
-      {/* <!-- TopNavBar component implementation --> */}
-      <nav className="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#0e0e0e] border-b border-[#3b494c]/20">
-        <div className="font-mono font-bold text-[#00E5FF] tracking-widest text-xl uppercase">
-          Pawwwl_<span className="opacity-50 text-xs">v1.0</span>
-        </div>
-        <div className="hidden md:flex items-center gap-8 font-mono text-xs tracking-tighter uppercase">
-          <Link
-            className="text-[#e5e2e1] opacity-70 hover:text-[#c3f5ff] transition-colors duration-150"
-            href="/showcase"
-          >
-            PROJECTS
-          </Link>
-
-          <Link
-            className="text-[#e5e2e1] opacity-70 hover:text-[#c3f5ff] transition-colors duration-150"
-            href="#"
-          >
-            STACK
-          </Link>
-          <a
-            className="text-[#e5e2e1] opacity-70 hover:text-[#c3f5ff] transition-colors duration-150"
-            href="#"
-          >
-            EXPERIENCE
-          </a>
-          <a
-            className="text-[#00E5FF] border-b-2 border-[#00E5FF] pb-1 cursor-blink"
-            href="#"
-          >
-            LOGS
-          </a>
-        </div>
-        <button className="bg-primary text-on-primary px-6 py-2 font-mono text-xs font-bold uppercase hover:bg-[#c3f5ff] transition-all duration-150 active:scale-95">
-          HIRE_ME
-        </button>
-      </nav>
+    <>
       <main className="relative pt-32 pb-20 px-6 max-w-7xl mx-auto">
         {/* <!-- Hero Section: Terminal Header --> */}
         <section className="mb-16">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-8">
-              <span className="font-mono text-xs text-primary mb-6 block uppercase tracking-[0.3em] font-bold">
-                git log --author="self"
-              </span>
               <h1 className="text-6xl md:text-8xl font-headline font-black leading-[0.9] tracking-tighter text-on-surface uppercase">
                 Software <br />
                 <span className="text-accent-pink italic">{`</>`}</span>
@@ -63,8 +22,8 @@ export default function Home() {
                 <span className="text-2xl font-bold">Hey there! I'm Paul </span>{" "}
                 <br />
                 Keyboarding during the week / <br />
-                Hiking mountains on the weekends / <br />
-                Red Rocks shows in the summer / <br />
+                Hiking on the weekends / <br />
+                Red Rocks in the summer / <br />
               </p>
             </div>
           </div>
@@ -73,10 +32,12 @@ export default function Home() {
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-20 mb-40">
           <div className="lg:col-span-5 relative">
             <div className="aspect-[4/5] rounded-none border border-outline overflow-hidden shadow-[0_0_50px_rgba(0,229,255,0.05)] relative z-10 group">
-              <img
+              <Image
+                loading="eager"
                 alt="Portrait of a developer"
-                className="w-full h-full object-cover brightness-75 group-hover:brightness-100 transition-all duration-700"
-                src="/profile/index.png"
+                fill
+                className="w-full h-full object-cover transition-all duration-700"
+                src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/profile.png"
               />
               <div className="absolute inset-0 bg-primary/10 mix-blend-overlay"></div>
             </div>
@@ -127,29 +88,33 @@ export default function Home() {
               <div className="relative flex-grow flex flex-col md:flex-row h-full">
                 {/* <!-- Frame 1: Sozo --> */}
                 <div className="relative w-full h-[250px] md:h-full md:w-1/2 overflow-hidden border-b md:border-b-0 md:border-r border-outline/50 group/sozo">
-                  <img
+                  <Image
+                    fill
+                    loading="eager"
                     alt="A stylized, minimalist vector illustration of Sozo, a black and white tuxedo cat, with very large, cute, dilated pupils, in a playful peeking pose over a dark surface."
-                    className="absolute inset-0 w-full h-full object-cover grayscale transition-all duration-500 group-hover/sozo:grayscale-0 group-hover/sozo:scale-105"
-                    src="sozo/index.png"
+                    className="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover/sozo:scale-105"
+                    src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/sozoooo.png"
                   />
                   <div className="absolute inset-0 bg-background/20 mix-blend-multiply"></div>
                   <div className="absolute top-4 left-4">
                     <span className="bg-primary/90 text-on-primary px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest">
-                      ID: SOZO
+                      PET: SOZO
                     </span>
                   </div>
                 </div>
                 {/* <!-- Frame 2: Silver --> */}
                 <div className="relative w-full h-[250px] md:h-full md:w-1/2 overflow-hidden group/silver">
-                  <img
+                  <Image
+                    fill
+                    loading="eager"
                     alt="A stylized, minimalist vector illustration of Silver, a solid dark gray cat, with very large, cute, dilated pupils. He is in a 'skittish' pose, peeking out from hiding under a minimalist, stylized tree."
-                    className="absolute inset-0 w-full h-full object-cover grayscale transition-all duration-500 group-hover/silver:grayscale-0 group-hover/silver:scale-105"
-                    src="silver/index.png"
+                    className="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover/silver:scale-105"
+                    src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/silverrrr.png"
                   />
                   <div className="absolute inset-0 bg-background/20 mix-blend-multiply"></div>
                   <div className="absolute top-4 left-4">
                     <span className="bg-accent-pink/90 text-on-primary px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest">
-                      ID: SILVER
+                      PET: SILVER
                     </span>
                   </div>
                 </div>
@@ -157,10 +122,12 @@ export default function Home() {
             </div>
             {/* <!-- Small Fact --> */}
             <div className="bg-surface-container border border-outline p-8 relative rounded-none flex flex-col justify-between overflow-hidden group min-h-[250px]">
-              <img
+              <Image
+                fill
+                loading="eager"
                 alt="New Console Illustration"
-                className="absolute inset-0 w-full h-full object-cover brightness-50 group-hover:grayscale-0 group-hover:brightness-75 transition-all duration-700"
-                src="/food.png"
+                className="absolute inset-0 w-full h-full object-cover brightness-50 group-hover:brightness-75 transition-all duration-700"
+                src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/seafood.png"
               />
               <div className="absolute inset-0 bg-black/40"></div>
               <div className="relative z-10">
@@ -170,49 +137,68 @@ export default function Home() {
               </div>
               <div className="relative z-10">
                 <h4 className="text-on-surface text-3xl font-headline font-bold uppercase leading-tight">
-                  Coffee_Nuts
+                  Seafood
                 </h4>
               </div>
             </div>
-            <div className="relative rounded-none p-8 flex flex-col justify-between overflow-hidden group min-h-[250px]">
+            {/* <!-- Favorite Pokemon --> */}
+            <div className="relative bg-surface-container border border-outline p-8 flex flex-col justify-between overflow-hidden group">
               <img
-                alt="New Console Illustration"
-                className="absolute inset-0 w-full h-full object-cover grayscale brightness-50 group-hover:grayscale-0 group-hover:brightness-75 transition-all duration-700"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCt0XW7Ba8ajKjoM78P7OFGmA8BIBDuGGPEazs6kNzA0HkreDOhdWXEctuG0bp2tjbhzuz88EG8P82ZgFp7B6M1BII28z5QDfYLlF3dvR79OU85blkCihTErmVncfwXH4GnsxY3EfGw5FZoR7ODgpeU438Rfljz7R_BKhcHKqPKYfBxA-t_ewmOy-sIsONT2XD8dWCij3f6bMrW8O8rVGJoB8bNWObRSTHci2k98uhp6pvj4pPuoeEzltLCcrM_xxojiXZ2FqC6Mv43"
+                alt="A minimalist, stylized vector illustration of Shuckle #213, a yellow turtle-like Pokemon with a red shell and multiple holes, in a clean Terminal Noir style."
+                className="absolute inset-0 w-full h-full object-cover opacity-20 transition-all duration-500"
+                src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/shuckle.png"
               />
-              <div className="absolute inset-0 bg-black/40"></div>
               <div className="relative z-10">
                 <p className="text-primary text-[10px] uppercase tracking-widest font-bold font-mono">
-                  Hardware_Stack
+                  FAVORITE_POKEMON
                 </p>
-              </div>
-              <div className="relative z-10">
-                <h4 className="text-on-surface text-3xl font-headline font-bold uppercase leading-tight">
-                  SWITCH 2 + <br /> HHKB
+                <h4 className="text-on-surface text-3xl font-headline font-bold uppercase mt-4">
+                  SHUCKLE <br />
+                  <small className="text-lg">#213</small>
                 </h4>
+              </div>
+              <div className="relative z-10 mt-4">
+                <span className="px-2 py-1 bg-accent-green/20 text-accent-green font-mono text-[10px] border border-accent-green/30 uppercase">
+                  Berry Juice
+                </span>
               </div>
             </div>
             {/* <!-- Location --> */}
             <div className="md:col-span-2 bg-surface-container border border-outline p-8 flex flex-col md:flex-row items-center gap-8 overflow-hidden relative min-h-[250px] py-12">
-              <img
+              <Image
+                fill
                 alt="Snowy Rocky Mountains"
+                loading="eager"
                 className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none"
-                src="/location.png"
+                src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/location.png"
               />
-              <div className="flex-shrink-0 w-24 h-24 bg-primary/10 border border-primary/20 flex items-center justify-center relative z-10">
-                <span
-                  className="material-symbols-outlined text-primary text-4xl"
-                  data-icon="lan"
+              <div className="flex-shrink-0 w-24 h-24 bg-primary/10 border border-primary/20 flex items-center justify-center relative z-10 text-primary">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="size-7"
                 >
-                  lan
-                </span>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
+                  />
+                </svg>
               </div>
               <div className="relative z-10">
-                <p className="text-[10px] text-on-surface-variant font-bold uppercase font-mono tracking-tight">
-                  REMOTE_ORIGIN: DENVER, COLORADO
+                <p className="text-[12px] text-primary font-bold uppercase font-mono tracking-tight">
+                  TIME_ZONE: MST
                 </p>
                 <h4 className="text-3xl font-headline font-black uppercase text-on-surface">
-                  DENVER_MST
+                  DENVER_CO
                 </h4>
               </div>
               <div className="absolute -right-10 opacity-5">
@@ -229,15 +215,15 @@ export default function Home() {
         {/* <!-- Minimalist Contact CTA --> */}
         <section className="bg-[#1a1a1a] border border-primary/20 p-20 text-center relative overflow-hidden">
           <div className="relative z-10 max-w-2xl mx-auto space-y-8">
-            <h2 className="text-5xl font-headline font-black text-on-surface uppercase">
-              Initialize Connection?
+            <h2 className="text-2xl font-headline font-black text-on-surface uppercase">
+              Initialize Communication
             </h2>
             <div className="pt-8">
               <a
                 className="inline-block bg-primary text-on-primary px-12 py-5 font-mono font-bold text-xl hover:bg-[#c3f5ff] transition-all duration-300 shadow-[0_0_30px_rgba(0,229,255,0.2)]"
                 href="mailto:pawl.y.kim@gmail.com"
               >
-                Email Me
+                Message Me
               </a>
             </div>
           </div>
@@ -276,6 +262,6 @@ export default function Home() {
           </a>
         </div>
       </footer>
-    </div>
+    </>
   );
 }
