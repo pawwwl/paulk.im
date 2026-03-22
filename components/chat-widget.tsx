@@ -109,11 +109,11 @@ export const ChatWidget = () => {
               <div className="w-2.5 h-2.5 rounded-full bg-primary/50"></div>
             </div>
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-on-surface-variant ml-4 font-bold">
-              SYSTEM_COMMUNICATION // v1.0.4
+              v1.0.4
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-on-surface-variant text-sm">
+            <span className="material-symbols-outlined text-on-surface-variant text-xs">
               terminal
             </span>
             <button

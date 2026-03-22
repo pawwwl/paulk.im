@@ -1,6 +1,8 @@
 import { ChatWidget } from "@/components/chat-widget";
+import { Icon_Location } from "@/components/icons";
 import { SKILLS } from "@/lib/data";
 import Image from "next/image";
+import { Calendar } from "./showcase/calendar.components";
 
 export default function Home() {
   return (
@@ -173,25 +175,7 @@ export default function Home() {
                 src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/location.png"
               />
               <div className="flex-shrink-0 w-24 h-24 bg-primary/10 border border-primary/20 flex items-center justify-center relative z-10 text-primary">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="size-7"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
-                  />
-                </svg>
+                <Icon_Location />
               </div>
               <div className="relative z-10">
                 <p className="text-[12px] text-primary font-bold uppercase font-mono tracking-tight">
@@ -213,55 +197,31 @@ export default function Home() {
           </div>
         </section>
         {/* <!-- Minimalist Contact CTA --> */}
-        <section className="bg-[#1a1a1a] border border-primary/20 p-20 text-center relative overflow-hidden">
-          <div className="relative z-10 max-w-2xl mx-auto space-y-8">
-            <h2 className="text-2xl font-headline font-black text-on-surface uppercase">
-              Initialize Communication
-            </h2>
-            <div className="pt-8">
-              <a
-                className="inline-block bg-primary text-on-primary px-12 py-5 font-mono font-bold text-xl hover:bg-[#c3f5ff] transition-all duration-300 shadow-[0_0_30px_rgba(0,229,255,0.2)]"
-                href="mailto:pawl.y.kim@gmail.com"
-              >
-                Message Me
-              </a>
-            </div>
+        <div className="flex items-center justify-between mb-16">
+          <h2 className="text-5xl font-headline font-black tracking-tight uppercase text-on-surface">
+            Show <span className="italic font-light text-primary">case</span>
+          </h2>
+          <span className="h-[1px] bg-outline flex-grow mx-8 hidden md:block"></span>
+        </div>
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
+            <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-[#00E5FF]">
+              System.initialize("Calendar")
+            </span>
           </div>
-        </section>
+          {/* <h1 className="font-headline text-5xl md:text-7xl font-black tracking-tighter leading-none text-[#e5e2e1] mb-8">
+                      Building{" "}
+                      <span className="italic text-[#00E5FF]">Hyper-Scale</span> Digital
+                      Architectures.
+                    </h1>
+                    <p className="text-sm font-mono text-[#a1a1a1] max-w-xl leading-relaxed">
+                      A collection of high-performance interfaces, low-latency
+                      experiments, and curated software artifacts for the next-gen web.
+                    </p> */}
+          <Calendar />
+        </div>
       </main>
-      {/* <!-- Footer component implementation --> */}
-      <footer className="w-full py-8 px-6 flex flex-col md:flex-row justify-between items-center gap-4 mt-auto border-t border-[#3b494c]/10 bg-[#0e0e0e]">
-        <div className="font-mono text-[10px] opacity-60 text-[#e5e2e1]">
-          Built with <span className="text-accent-pink">&lt;3</span> and many
-          cups of coffee // (c) 2026
-        </div>
-        <div className="flex gap-8 font-mono text-[10px] uppercase tracking-widest">
-          <a
-            className="text-[#e5e2e1] hover:text-[#00E5FF] transition-colors"
-            href="#"
-          >
-            GITHUB
-          </a>
-          <a
-            className="text-[#e5e2e1] hover:text-[#00E5FF] transition-colors"
-            href="#"
-          >
-            LINKEDIN
-          </a>
-          <a
-            className="text-[#e5e2e1] hover:text-[#00E5FF] transition-colors"
-            href="#"
-          >
-            TWITTER
-          </a>
-          <a
-            className="text-[#e5e2e1] hover:text-[#00E5FF] transition-colors"
-            href="#"
-          >
-            RSS
-          </a>
-        </div>
-      </footer>
     </>
   );
 }

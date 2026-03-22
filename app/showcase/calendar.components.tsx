@@ -1,10 +1,12 @@
 "use client";
 
 import {
+  Icon_Calendar,
   Icon_ChevronDown,
   Icon_ChevronLeft,
   Icon_ChevronRight,
   Icon_Ellipsis,
+  Icon_Location,
 } from "@/components/icons";
 import {
   useCalendar,
@@ -34,11 +36,13 @@ export const Calendar = () => {
   } = useCalendar();
 
   const handleSelectDate = (dateStr: string) => {
-    setSelectedDate(dayjs(dateStr));
+    setSelectedDate((prev) =>
+      prev?.format("YYYY-MM-DD") === dateStr ? null : dayjs(dateStr),
+    );
   };
 
   return (
-    <div className="flex h-full flex-col dark:bg-gray-900">
+    <div className="flex h-full flex-col dark:bg-background">
       <CalendarHeader
         label={headerLabel}
         view={view}
@@ -48,7 +52,11 @@ export const Calendar = () => {
         onViewChange={setView}
       />
       {view === "month" && (
-        <CalendarMonth days={getMonthDays()} onSelectDate={handleSelectDate} />
+        <CalendarMonth
+          days={getMonthDays()}
+          onSelectDate={handleSelectDate}
+          selectedDate={selectedDate}
+        />
       )}
       {view === "week" && (
         <CalendarWeek
@@ -82,8 +90,8 @@ export const CalendarHeader = ({
   onToday: () => void;
   onViewChange: (v: CalendarView) => void;
 }) => (
-  <header className="flex items-center justify-between border-b border-gray-200 px-6 py-4 lg:flex-none dark:border-white/10 dark:bg-gray-800/50">
-    <h1 className="text-base font-semibold text-gray-900 dark:text-white">
+  <header className="flex items-center justify-between border-b border-gray-200 px-6 py-4 lg:flex-none dark:border-white/10 dark:bg-surface-container/80">
+    <h1 className="text-base font-semibold text-gray-900 dark:text-primary">
       <time>{label}</time>
     </h1>
     <div className="flex items-center">
@@ -97,7 +105,7 @@ export const CalendarHeader = ({
         </button>
         <button
           onClick={onToday}
-          className="hidden px-3.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative md:block dark:text-white dark:hover:bg-white/10"
+          className="hidden px-3.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:relative md:block dark:text-on-surface dark:hover:bg-white/10"
         >
           Today
         </button>
@@ -120,7 +128,7 @@ export const CalendarHeader = ({
               className={`px-3.5 py-2 text-sm font-semibold rounded-l-md transition-colors ${
                 view === "month"
                   ? "bg-indigo-600 text-white dark:bg-indigo-500"
-                  : "bg-white text-gray-900 hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                  : "bg-white text-gray-900 hover:bg-gray-50 dark:bg-white/10 dark:text-on-surface dark:hover:bg-white/20"
               }`}
             >
               Month
@@ -130,7 +138,7 @@ export const CalendarHeader = ({
               className={`px-3.5 py-2 text-sm font-semibold rounded-r-md border-l border-gray-300 transition-colors dark:border-white/5 ${
                 view === "week"
                   ? "bg-indigo-600 text-white dark:bg-indigo-500"
-                  : "bg-white text-gray-900 hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                  : "bg-white text-gray-900 hover:bg-gray-50 dark:bg-white/10 dark:text-on-surface dark:hover:bg-white/20"
               }`}
             >
               Week
@@ -149,10 +157,10 @@ export const CalendarHeader = ({
           <span className="sr-only">Open menu</span>
           <Icon_Ellipsis />
         </MenuButton>
-        <MenuItems className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5 dark:divide-white/10 dark:bg-gray-800 dark:ring-white/10">
+        <MenuItems className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5 dark:divide-white/10 dark:bg-surface-container dark:ring-white/10">
           <div className="py-1">
             <MenuItem>
-              <button className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5">
+              <button className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-on-surface-variant dark:hover:bg-white/5">
                 Create event
               </button>
             </MenuItem>
@@ -161,7 +169,7 @@ export const CalendarHeader = ({
             <MenuItem>
               <button
                 onClick={onToday}
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-on-surface-variant dark:hover:bg-white/5"
               >
                 Go to today
               </button>
@@ -172,7 +180,7 @@ export const CalendarHeader = ({
               <MenuItem key={v}>
                 <button
                   onClick={() => onViewChange(v)}
-                  className="block w-full px-4 py-2 text-left text-sm capitalize text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+                  className="block w-full px-4 py-2 text-left text-sm capitalize text-gray-700 hover:bg-gray-100 dark:text-on-surface-variant dark:hover:bg-white/5"
                 >
                   {v} view
                 </button>
@@ -188,18 +196,19 @@ export const CalendarHeader = ({
 type Props = {
   days: CalendarDay[];
   onSelectDate: (date: string) => void;
+  selectedDate: Dayjs | null;
 };
 
-const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export const CalendarMonth = ({ days, onSelectDate }: Props) => (
+export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
   <div className="shadow-sm ring-1 ring-black/5 lg:flex lg:flex-auto lg:flex-col dark:ring-white/5">
     {/* Day of week headers */}
-    <div className="grid grid-cols-7 gap-px border-b border-gray-300 bg-gray-200 text-center text-xs/6 font-semibold text-gray-700 lg:flex-none dark:border-white/5 dark:bg-white/15 dark:text-gray-300">
+    <div className="grid grid-cols-7 gap-px border-b border-gray-300 bg-gray-200 text-center text-xs/6 font-semibold text-gray-700 lg:flex-none dark:border-white/5 dark:bg-white/15 dark:text-primary">
       {DOW.map((d) => (
         <div
           key={d}
-          className="flex justify-center bg-white py-2 dark:bg-gray-900"
+          className="flex justify-center bg-white py-2 dark:bg-surface"
         >
           <span className="sr-only sm:not-sr-only">{d}</span>
           <span className="sm:hidden">{d[0]}</span>
@@ -207,17 +216,18 @@ export const CalendarMonth = ({ days, onSelectDate }: Props) => (
       ))}
     </div>
 
-    <div className="flex bg-gray-200 text-xs/6 text-gray-700 lg:flex-auto dark:bg-white/10 dark:text-gray-300">
+    <div className="flex bg-gray-200 text-xs/6 text-gray-700 lg:flex-auto dark:bg-white/10 dark:text-on-surface-variant">
       {/* Desktop grid */}
-      <div className="hidden w-full lg:grid lg:grid-cols-7 lg:grid-rows-6 lg:gap-px">
+      <div className="hidden w-full lg:grid lg:grid-cols-7 lg:gap-px">
         {days.map((day) => (
-          <div
+          <button
             key={day.date}
+            type="button"
             onClick={() => onSelectDate(day.date)}
-            className={`group relative cursor-pointer px-3 py-2 ${
+            className={`group relative w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-10 ${
               day.isCurrentMonth
-                ? "bg-white dark:bg-gray-900"
-                : "bg-gray-50 text-gray-500 dark:bg-gray-900 dark:text-gray-400"
+                ? "bg-white dark:bg-surface"
+                : "bg-gray-50 text-gray-500 dark:bg-surface dark:text-on-surface-variant"
             }`}
           >
             <time
@@ -227,7 +237,7 @@ export const CalendarMonth = ({ days, onSelectDate }: Props) => (
                   ? "bg-indigo-600 font-semibold text-white dark:bg-indigo-500"
                   : day.isSelected
                     ? "bg-gray-900 font-semibold text-white dark:bg-white dark:text-gray-900"
-                    : "text-gray-900 dark:text-white"
+                    : "text-gray-900 dark:text-primary"
               } ${!day.isCurrentMonth ? "opacity-50" : ""}`}
             >
               {day.date.split("-").pop()?.replace(/^0/, "")}
@@ -237,31 +247,31 @@ export const CalendarMonth = ({ days, onSelectDate }: Props) => (
                 {day.events.slice(0, 2).map((event) => (
                   <li key={event.id}>
                     <a href={"#"} className="group flex">
-                      <p className="flex-auto truncate font-medium text-gray-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
-                        {event.name}
+                      <p className="flex-auto truncate font-medium text-gray-900 group-hover:text-indigo-600 dark:text-on-surface dark:group-hover:text-indigo-400">
+                        {event._.name}
                       </p>
                       <time
-                        dateTime={event.datetime}
-                        className="ml-3 hidden flex-none text-gray-500 group-hover:text-indigo-600 xl:block dark:text-gray-400"
+                        dateTime={event._.datetime}
+                        className="ml-3 hidden flex-none text-gray-500 group-hover:text-indigo-600 xl:block dark:text-on-surface-variant"
                       >
-                        {event.time}
+                        {dayjs(event._.datetime).format("h:mm")}
                       </time>
                     </a>
                   </li>
                 ))}
                 {day.events.length > 2 && (
-                  <li className="text-gray-500 dark:text-gray-400">
+                  <li className="text-gray-500 dark:text-on-surface-variant">
                     + {day.events.length - 2} more
                   </li>
                 )}
               </ol>
             )}
-          </div>
+          </button>
         ))}
       </div>
 
       {/* Mobile grid */}
-      <div className="isolate grid w-full grid-cols-7 grid-rows-6 gap-px lg:hidden">
+      <div className="isolate grid w-full grid-cols-7 gap-px lg:hidden">
         {days.map((day) => (
           <button
             key={day.date}
@@ -269,23 +279,24 @@ export const CalendarMonth = ({ days, onSelectDate }: Props) => (
             onClick={() => onSelectDate(day.date)}
             className={`group relative flex h-14 flex-col px-3 py-2 focus:z-10 ${
               day.isCurrentMonth
-                ? "bg-white dark:bg-gray-900"
-                : "bg-gray-50 dark:bg-gray-900/50"
+                ? "bg-white dark:bg-surface"
+                : "bg-gray-50 dark:bg-surface/50"
             } ${day.isSelected ? "font-semibold" : ""}`}
           >
             <time
               dateTime={day.date}
-              className={`ml-auto flex size-6 items-center justify-center rounded-full text-sm ${
-                day.isToday && day.isSelected
-                  ? "bg-indigo-600 font-semibold text-white dark:bg-indigo-500"
-                  : day.isToday
-                    ? "font-semibold text-indigo-600 dark:text-indigo-400"
-                    : day.isSelected
-                      ? "bg-gray-900 font-semibold text-white dark:bg-white dark:text-gray-900"
-                      : day.isCurrentMonth
-                        ? "text-gray-900 dark:text-white"
-                        : "text-gray-400"
-              }`}
+              className={`ml-auto flex size-6 items-center justify-center rounded-full text-sm ${(() => {
+                if (day.isToday && day.isSelected) {
+                  return "bg-indigo-600 font-semibold text-white dark:bg-indigo-500";
+                }
+                if (day.isToday)
+                  return "font-semibold text-indigo-600 dark:text-indigo-400";
+                if (day.isSelected)
+                  return "bg-gray-900 font-semibold text-white dark:bg-white dark:text-gray-900";
+                if (day.isCurrentMonth)
+                  return "text-gray-900 dark:text-primary";
+                return "text-gray-400 dark:text-primary/40";
+              })()}`}
             >
               {day.date.split("-").pop()?.replace(/^0/, "")}
             </time>
@@ -307,33 +318,57 @@ export const CalendarMonth = ({ days, onSelectDate }: Props) => (
 
     {/* Mobile selected day events */}
     <div className="px-4 py-6 lg:hidden">
-      <ol className="divide-y divide-gray-100 overflow-hidden rounded-lg bg-white text-sm shadow-sm ring-1 ring-black/5 dark:divide-white/10 dark:bg-gray-800/50 dark:ring-white/10">
-        {days
-          .find((d) => d.isSelected)
-          ?.events.map((event) => (
+      <ol className="divide-y divide-gray-100 overflow-hidden rounded-lg bg-white text-sm shadow-sm ring-1 ring-black/5 dark:divide-white/10 dark:bg-surface-container/80 dark:ring-white/10">
+        {(() => {
+          const events =
+            selectedDate === null
+              ? days.filter((d) => d.isCurrentMonth).flatMap((d) => d.events)
+              : (days.find((d) => d.isSelected)?.events ?? []);
+          if (events.length === 0)
+            return (
+              <li className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-on-surface-variant">
+                <p className="font-medium">No events</p>
+              </li>
+            );
+          return events.map((event) => (
             <li
               key={event.id}
               className="group flex p-4 pr-6 hover:bg-gray-50 dark:hover:bg-white/5"
             >
               <div className="flex-auto">
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {event.name}
+                <div className="flex items-center">
+                  <Icon_Calendar className="size-4 mr-1" />
+                  <time
+                    dateTime={event._.datetime}
+                    className="text-sm text-gray-400 font-bold"
+                  >
+                    {dayjs(event._.datetime).format("MMM D")} ·{" "}
+                    {dayjs(event._.datetime).format("h:mm A")}
+                  </time>
+                </div>
+                <p className="text-lg font-semibold text-gray-900 dark:text-on-surface my-1">
+                  {event._.name}
                 </p>
-                <time
-                  dateTime={event.datetime}
-                  className="mt-2 flex items-center text-gray-700 dark:text-gray-300"
-                >
-                  {event.time}
-                </time>
+                {event._.location && (
+                  <a
+                    href={`https://maps.google.com/?q=${encodeURIComponent(event._.location)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-0.5 flex items-center text-indigo-600 hover:underline dark:text-indigo-400"
+                  >
+                    <Icon_Location className="size-4 mr-1" /> {event._.location}
+                  </a>
+                )}
               </div>
               <a
                 href={""}
-                className="ml-6 flex-none self-center rounded-md bg-white px-3 py-2 font-semibold text-gray-900 opacity-0 shadow-xs ring-1 ring-inset ring-gray-300 group-hover:opacity-100 dark:bg-white/10 dark:text-white dark:ring-white/5"
+                className="ml-6 flex-none self-center rounded-md bg-white px-3 py-2 font-semibold text-gray-900 opacity-0 shadow-xs ring-1 ring-inset ring-gray-300 group-hover:opacity-100 dark:bg-white/10 dark:text-on-surface dark:ring-white/5"
               >
                 Edit
               </a>
             </li>
-          ))}
+          ));
+        })()}
       </ol>
     </div>
   </div>
@@ -374,19 +409,19 @@ export const CalendarWeek = ({
 }: {
   weekDays: Dayjs[];
   getEventsForDate: (date: string) => CalendarEvent[];
-  selectedDate: Dayjs;
+  selectedDate: Dayjs | null;
   onSelectDate: (date: string) => void;
 }) => (
   <div className="flex h-full flex-col">
-    <div className="isolate flex flex-auto flex-col overflow-auto bg-white dark:bg-gray-900">
+    <div className="isolate flex flex-auto flex-col overflow-auto bg-white dark:bg-surface">
       <div
         style={{ width: "165%" }}
         className="flex max-w-full flex-none flex-col sm:max-w-none md:max-w-full"
       >
         {/* Week day headers */}
-        <div className="sticky top-0 z-30 flex-none bg-white shadow-sm ring-1 ring-black/5 sm:pr-8 dark:bg-gray-900 dark:ring-white/20">
+        <div className="sticky top-0 z-30 flex-none bg-white shadow-sm ring-1 ring-black/5 sm:pr-8 dark:bg-surface dark:ring-white/20">
           {/* Mobile headers */}
-          <div className="grid grid-cols-7 text-sm/6 text-gray-500 sm:hidden dark:text-gray-400">
+          <div className="grid grid-cols-7 text-sm/6 text-gray-500 sm:hidden dark:text-on-surface-variant">
             {weekDays.map((day) => (
               <button
                 key={day.format("YYYY-MM-DD")}
@@ -399,9 +434,9 @@ export const CalendarWeek = ({
                     day.isToday()
                       ? "bg-indigo-600 text-white dark:bg-indigo-500"
                       : day.format("YYYY-MM-DD") ===
-                          selectedDate.format("YYYY-MM-DD")
+                          selectedDate?.format("YYYY-MM-DD")
                         ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                        : "text-gray-900 dark:text-white"
+                        : "text-gray-900 dark:text-on-surface"
                   }`}
                 >
                   {day.date()}
@@ -411,7 +446,7 @@ export const CalendarWeek = ({
           </div>
 
           {/* Desktop headers */}
-          <div className="-mr-px hidden grid-cols-7 divide-x divide-gray-100 border-r border-gray-100 text-sm/6 text-gray-500 sm:grid dark:divide-white/10 dark:border-white/10 dark:text-gray-400">
+          <div className="-mr-px hidden grid-cols-7 divide-x divide-gray-100 border-r border-gray-100 text-sm/6 text-gray-500 sm:grid dark:divide-white/10 dark:border-white/10 dark:text-on-surface-variant">
             <div className="col-end-1 w-14" />
             {weekDays.map((day) => (
               <button
@@ -426,9 +461,9 @@ export const CalendarWeek = ({
                       day.isToday()
                         ? "bg-indigo-600 text-white dark:bg-indigo-500"
                         : day.format("YYYY-MM-DD") ===
-                            selectedDate.format("YYYY-MM-DD")
+                            selectedDate?.format("YYYY-MM-DD")
                           ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                          : "text-gray-900 dark:text-white"
+                          : "text-gray-900 dark:text-on-surface"
                     }`}
                   >
                     {day.date()}
@@ -440,7 +475,7 @@ export const CalendarWeek = ({
         </div>
 
         <div className="flex flex-auto h-[calc(100vh-600px)] overflow-auto">
-          <div className="sticky left-0 z-10 w-14 flex-none bg-white ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-white/5" />
+          <div className="sticky left-0 z-10 w-14 flex-none bg-white ring-1 ring-gray-100 dark:bg-surface dark:ring-white/5" />
           <div className="grid flex-auto grid-cols-1 grid-rows-1">
             {/* Horizontal lines */}
             <div
@@ -450,8 +485,8 @@ export const CalendarWeek = ({
               <div className="row-end-1 h-7" />
               {HOURS.map((hour, i) => (
                 <>
-                  <div key={`${hour}-full`}>
-                    <div className="sticky left-0 z-20 -mt-2.5 -ml-14 w-14 pr-2 text-right text-xs/5 text-gray-400 dark:text-gray-500">
+                  <div key={`hour-${hour}-${i}-full`}>
+                    <div className="sticky left-0 z-20 -mt-2.5 -ml-14 w-14 pr-2 text-right text-xs/5 text-gray-400 dark:text-on-surface-variant">
                       {hour}
                     </div>
                   </div>
@@ -478,7 +513,7 @@ export const CalendarWeek = ({
               {weekDays.map((day, colIndex) => {
                 const events = getEventsForDate(day.format("YYYY-MM-DD"));
                 return events.map((event, eventIndex) => {
-                  const row = timeToGridRow(event.datetime);
+                  const row = timeToGridRow(event._.datetime);
                   const color = EVENT_COLORS[eventIndex % EVENT_COLORS.length];
                   return (
                     <li
@@ -490,8 +525,10 @@ export const CalendarWeek = ({
                         href={""}
                         className={`group absolute inset-1 flex flex-col overflow-y-auto rounded-lg p-2 text-xs/5 ${color}`}
                       >
-                        <p className="order-1 font-semibold">{event.name}</p>
-                        <time dateTime={event.datetime}>{event.time}</time>
+                        <p className="order-1 font-semibold">{event._.name}</p>
+                        <time dateTime={event._.datetime}>
+                          {dayjs(event._.datetime).format("h:mm A")}
+                        </time>
                       </a>
                     </li>
                   );
