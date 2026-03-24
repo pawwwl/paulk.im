@@ -222,8 +222,9 @@ export function useCalendar() {
   };
 
   // Generate month grid (only weeks with at least one current-month day, Sun-start)
-  const getMonthDays = (): CalendarDay[] => {
-    const startOfMonth = currentDate.startOf("month");
+  const getMonthDays = (overrideDate?: Dayjs): CalendarDay[] => {
+    const date = overrideDate ?? currentDate;
+    const startOfMonth = date.startOf("month");
     // day(): 0=Sun, 6=Sat
     const startDay = startOfMonth.day();
     const gridStart = startOfMonth.subtract(startDay, "day");
@@ -233,10 +234,10 @@ export function useCalendar() {
       const day = gridStart.add(i, "day");
       const dateStr = day.format("YYYY-MM-DD");
       // Stop once we've passed the month and completed the current week
-      if (i >= 7 && i % 7 === 0 && day.month() !== currentDate.month()) break;
+      if (i >= 7 && i % 7 === 0 && day.month() !== date.month()) break;
       days.push({
         date: dateStr,
-        isCurrentMonth: day.month() === currentDate.month(),
+        isCurrentMonth: day.month() === date.month(),
         isToday: day.isToday(),
         isSelected:
           selectedDate !== null &&

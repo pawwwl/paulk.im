@@ -66,7 +66,7 @@ export default function RootLayout({
               </a>
             </div>
             <button className="bg-primary text-on-primary px-6 py-2 font-mono text-xs font-bold uppercase hover:bg-[#c3f5ff] transition-all duration-150 active:scale-95">
-              HIRE_ME
+              <Link href="/showcase">SHOW_CASE</Link>
             </button>
           </nav>
           {children}

@@ -16,12 +16,16 @@ import {
 } from "./calendar.hooks";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 
+import { useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
+import useEmblaCarousel from "embla-carousel-react";
 import dayjs, { Dayjs } from "dayjs";
 
 const VIEWS: CalendarView[] = ["day", "week", "month", "year"];
 
 export const Calendar = () => {
   const {
+    currentDate,
     view,
     setView,
     headerLabel,
@@ -35,6 +39,39 @@ export const Calendar = () => {
     setSelectedDate,
   } = useCalendar();
 
+  const SLIDES = [-2, -1, 0, 1, 2] as const;
+  const CENTER = 2;
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, startIndex: CENTER });
+
+  // Use refs so the settle handler never goes stale
+  const goToPrevRef = useRef(goToPrev);
+  const goToNextRef = useRef(goToNext);
+  useEffect(() => { goToPrevRef.current = goToPrev; });
+  useEffect(() => { goToNextRef.current = goToNext; });
+
+  // On settle: step the month by the diff from center, then snap back
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSettle = () => {
+      const diff = emblaApi.selectedScrollSnap() - CENTER;
+      if (diff !== 0) {
+        flushSync(() => {
+          if (diff < 0) for (let i = 0; i < -diff; i++) goToPrevRef.current();
+          else for (let i = 0; i < diff; i++) goToNextRef.current();
+        });
+        emblaApi.scrollTo(CENTER, true);
+      }
+    };
+    emblaApi.on("settle", onSettle);
+    return () => { emblaApi.off("settle", onSettle); };
+  }, [emblaApi]);
+
+  // Always return to center when month changes (e.g. via Today button)
+  useEffect(() => {
+    emblaApi?.scrollTo(CENTER, true);
+  }, [emblaApi, currentDate]);
+
   const handleSelectDate = (dateStr: string) => {
     setSelectedDate((prev) =>
       prev?.format("YYYY-MM-DD") === dateStr ? null : dayjs(dateStr),
@@ -46,17 +83,25 @@ export const Calendar = () => {
       <CalendarHeader
         label={headerLabel}
         view={view}
-        onPrev={goToPrev}
-        onNext={goToNext}
+        onPrev={view === "month" ? () => emblaApi?.scrollPrev() : goToPrev}
+        onNext={view === "month" ? () => emblaApi?.scrollNext() : goToNext}
         onToday={goToToday}
         onViewChange={setView}
       />
       {view === "month" && (
-        <CalendarMonth
-          days={getMonthDays()}
-          onSelectDate={handleSelectDate}
-          selectedDate={selectedDate}
-        />
+        <div ref={emblaRef} className="overflow-hidden">
+          <div className="flex">
+            {SLIDES.map((offset) => (
+              <div key={offset} style={{ flex: "0 0 100%", minWidth: 0 }}>
+                <CalendarMonth
+                  days={getMonthDays(currentDate.add(offset, "month"))}
+                  onSelectDate={handleSelectDate}
+                  selectedDate={selectedDate}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       )}
       {view === "week" && (
         <CalendarWeek
@@ -206,44 +251,46 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
     {/* Day of week headers */}
     <div className="grid grid-cols-7 gap-px border-b border-gray-300 bg-gray-200 text-center text-xs/6 font-semibold text-gray-700 lg:flex-none dark:border-white/5 dark:bg-white/15 dark:text-primary">
       {DOW.map((d) => (
-        <div
-          key={d}
-          className="flex justify-center bg-white py-2 dark:bg-surface"
-        >
+        <div key={d} className="flex justify-center bg-white py-2 dark:bg-surface">
           <span className="sr-only sm:not-sr-only">{d}</span>
           <span className="sm:hidden">{d[0]}</span>
         </div>
       ))}
     </div>
 
-    <div className="flex bg-gray-200 text-xs/6 text-gray-700 lg:flex-auto dark:bg-white/10 dark:text-on-surface-variant">
-      {/* Desktop grid */}
-      <div className="hidden w-full lg:grid lg:grid-cols-7 lg:gap-px">
+    {/* Month grid */}
+    <div className="bg-gray-200 text-xs/6 text-gray-700 lg:flex-auto dark:bg-white/10 dark:text-on-surface-variant">
+      <div className="grid grid-cols-7 gap-px">
         {days.map((day) => (
           <button
             key={day.date}
             type="button"
             onClick={() => onSelectDate(day.date)}
-            className={`group relative w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-10 ${
+            className={`group relative flex flex-col px-3 py-2 focus:z-10 min-h-14 lg:min-h-28 hover:bg-gray-50 dark:hover:bg-white/5 ${
               day.isCurrentMonth
                 ? "bg-white dark:bg-surface"
-                : "bg-gray-50 text-gray-500 dark:bg-surface dark:text-on-surface-variant"
-            }`}
+                : "bg-gray-50 text-gray-500 dark:bg-surface/50 dark:text-on-surface-variant"
+            } ${day.isSelected ? "font-semibold" : ""}`}
           >
             <time
               dateTime={day.date}
-              className={`relative flex size-6 items-center justify-center rounded-full text-sm font-medium ${
-                day.isToday
-                  ? "bg-indigo-600 font-semibold text-white dark:bg-indigo-500"
-                  : day.isSelected
-                    ? "bg-gray-900 font-semibold text-white dark:bg-white dark:text-gray-900"
-                    : "text-gray-900 dark:text-primary"
-              } ${!day.isCurrentMonth ? "opacity-50" : ""}`}
+              className={`ml-auto flex size-6 items-center justify-center rounded-full text-sm ${(() => {
+                if (day.isToday && day.isSelected)
+                  return "bg-indigo-600 font-semibold text-white dark:bg-indigo-500";
+                if (day.isToday)
+                  return "font-semibold text-indigo-600 dark:text-indigo-400";
+                if (day.isSelected)
+                  return "bg-gray-900 font-semibold text-white dark:bg-white dark:text-gray-900";
+                if (day.isCurrentMonth) return "text-gray-900 dark:text-primary";
+                return "text-gray-400 dark:text-primary/40";
+              })()}`}
             >
               {day.date.split("-").pop()?.replace(/^0/, "")}
             </time>
+            <span className="sr-only">{day.events.length} events</span>
+            {/* Desktop: inline event names */}
             {day.events.length > 0 && (
-              <ol className="mt-2">
+              <ol className="mt-2 hidden lg:block w-full text-left">
                 {day.events.slice(0, 2).map((event) => (
                   <li key={event.id}>
                     <a href={"#"} className="group flex">
@@ -266,43 +313,9 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
                 )}
               </ol>
             )}
-          </button>
-        ))}
-      </div>
-
-      {/* Mobile grid */}
-      <div className="isolate grid w-full grid-cols-7 gap-px lg:hidden">
-        {days.map((day) => (
-          <button
-            key={day.date}
-            type="button"
-            onClick={() => onSelectDate(day.date)}
-            className={`group relative flex h-14 flex-col px-3 py-2 focus:z-10 ${
-              day.isCurrentMonth
-                ? "bg-white dark:bg-surface"
-                : "bg-gray-50 dark:bg-surface/50"
-            } ${day.isSelected ? "font-semibold" : ""}`}
-          >
-            <time
-              dateTime={day.date}
-              className={`ml-auto flex size-6 items-center justify-center rounded-full text-sm ${(() => {
-                if (day.isToday && day.isSelected) {
-                  return "bg-indigo-600 font-semibold text-white dark:bg-indigo-500";
-                }
-                if (day.isToday)
-                  return "font-semibold text-indigo-600 dark:text-indigo-400";
-                if (day.isSelected)
-                  return "bg-gray-900 font-semibold text-white dark:bg-white dark:text-gray-900";
-                if (day.isCurrentMonth)
-                  return "text-gray-900 dark:text-primary";
-                return "text-gray-400 dark:text-primary/40";
-              })()}`}
-            >
-              {day.date.split("-").pop()?.replace(/^0/, "")}
-            </time>
-            <span className="sr-only">{day.events.length} events</span>
+            {/* Mobile: event dot indicators */}
             {day.events.length > 0 && (
-              <span className="-mx-0.5 mt-auto flex flex-wrap-reverse">
+              <span className="-mx-0.5 mt-auto flex flex-wrap-reverse lg:hidden">
                 {day.events.map((e) => (
                   <span
                     key={e.id}
@@ -316,9 +329,9 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
       </div>
     </div>
 
-    {/* Mobile selected day events */}
-    <div className="px-4 py-6 lg:hidden">
-      <ol className="divide-y divide-gray-100 overflow-hidden rounded-lg bg-white text-sm shadow-sm ring-1 ring-black/5 dark:divide-white/10 dark:bg-surface-container/80 dark:ring-white/10">
+    {/* Mobile: selected day events list */}
+    <div className="lg:hidden">
+      <ol className="divide-y divide-gray-100 text-sm dark:divide-white/10">
         {(() => {
           const events =
             selectedDate === null
