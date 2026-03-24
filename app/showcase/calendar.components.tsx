@@ -2,10 +2,8 @@
 
 import {
   Icon_Calendar,
-  Icon_ChevronDown,
   Icon_ChevronLeft,
   Icon_ChevronRight,
-  Icon_Ellipsis,
   Icon_Location,
 } from "@/components/icons";
 import {
@@ -14,8 +12,6 @@ import {
   CalendarDay,
   CalendarEvent,
 } from "./calendar.hooks";
-import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-
 import { Fragment, useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import useEmblaCarousel from "embla-carousel-react";
@@ -61,10 +57,12 @@ export const Calendar = () => {
     const onSettle = () => {
       const diff = emblaApi.selectedScrollSnap() - CENTER;
       if (diff !== 0) {
+        const scrollY = window.scrollY;
         flushSync(() => {
           if (diff < 0) for (let i = 0; i < -diff; i++) goToPrevRef.current();
           else for (let i = 0; i < diff; i++) goToNextRef.current();
         });
+        window.scrollTo(0, scrollY);
         emblaApi.scrollTo(CENTER, true);
       }
     };
@@ -77,8 +75,10 @@ export const Calendar = () => {
   // Return to center when date or view changes (Today button, view switch)
   useEffect(() => {
     if (!emblaApi) return;
+    const scrollY = window.scrollY;
     emblaApi.reInit();
     emblaApi.scrollTo(CENTER, true);
+    window.scrollTo(0, scrollY);
   }, [emblaApi, currentDate, view]);
 
   const handleSelectDate = (dateStr: string) => {

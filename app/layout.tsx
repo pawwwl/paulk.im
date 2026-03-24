@@ -38,33 +38,7 @@ export default function RootLayout({
                 Pawwwl_<span className="opacity-50 text-xs">v1.0</span>
               </div>
             </Link>
-            <div className="hidden md:flex items-center gap-8 font-mono text-xs tracking-tighter uppercase">
-              <Link
-                className="text-[#e5e2e1] opacity-70 hover:text-[#c3f5ff] transition-colors duration-150"
-                href="/showcase"
-              >
-                Showcase
-              </Link>
 
-              <Link
-                className="text-[#e5e2e1] opacity-70 hover:text-[#c3f5ff] transition-colors duration-150"
-                href="#"
-              >
-                STACK
-              </Link>
-              <a
-                className="text-[#e5e2e1] opacity-70 hover:text-[#c3f5ff] transition-colors duration-150"
-                href="#"
-              >
-                EXPERIENCE
-              </a>
-              <a
-                className="text-[#00E5FF] border-b-2 border-[#00E5FF] pb-1 cursor-blink"
-                href="#"
-              >
-                LOGS
-              </a>
-            </div>
             <button className="bg-primary text-on-primary px-6 py-2 font-mono text-xs font-bold uppercase hover:bg-[#c3f5ff] transition-all duration-150 active:scale-95">
               <Link href="/showcase">SHOW_CASE</Link>
             </button>

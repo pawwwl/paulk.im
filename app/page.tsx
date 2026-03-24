@@ -1,5 +1,5 @@
 import { ChatWidget } from "@/components/chat-widget";
-import { Icon_Location } from "@/components/icons";
+import { LocationCard } from "@/components/location-card";
 import { SKILLS } from "@/lib/data";
 import Image from "next/image";
 import { Calendar } from "./showcase/calendar.components";
@@ -166,61 +166,9 @@ export default function Home() {
               </div>
             </div>
             {/* <!-- Location --> */}
-            <div className="md:col-span-2 bg-surface-container border border-outline p-8 flex flex-col md:flex-row items-center gap-8 overflow-hidden relative min-h-[250px] py-12">
-              <Image
-                fill
-                alt="Snowy Rocky Mountains"
-                loading="eager"
-                className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none"
-                src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/location.png"
-              />
-              <div className="flex-shrink-0 w-24 h-24 bg-primary/10 border border-primary/20 flex items-center justify-center relative z-10 text-primary">
-                <Icon_Location />
-              </div>
-              <div className="relative z-10">
-                <p className="text-[12px] text-primary font-bold uppercase font-mono tracking-tight">
-                  TIME_ZONE: MST
-                </p>
-                <h4 className="text-3xl font-headline font-black uppercase text-on-surface">
-                  DENVER_CO
-                </h4>
-              </div>
-              <div className="absolute -right-10 opacity-5">
-                <span
-                  className="material-symbols-outlined text-[200px]"
-                  data-icon="public"
-                >
-                  mile
-                </span>
-              </div>
-            </div>
+            <LocationCard />
           </div>
         </section>
-        {/* <!-- Minimalist Contact CTA --> */}
-        <div className="flex items-center justify-between mb-16">
-          <h2 className="text-5xl font-headline font-black tracking-tight uppercase text-on-surface">
-            Show <span className="italic font-light text-primary">case</span>
-          </h2>
-          <span className="h-[1px] bg-outline flex-grow mx-8 hidden md:block"></span>
-        </div>
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-            <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-[#00E5FF]">
-              System.initialize("Calendar")
-            </span>
-          </div>
-          {/* <h1 className="font-headline text-5xl md:text-7xl font-black tracking-tighter leading-none text-[#e5e2e1] mb-8">
-                      Building{" "}
-                      <span className="italic text-[#00E5FF]">Hyper-Scale</span> Digital
-                      Architectures.
-                    </h1>
-                    <p className="text-sm font-mono text-[#a1a1a1] max-w-xl leading-relaxed">
-                      A collection of high-performance interfaces, low-latency
-                      experiments, and curated software artifacts for the next-gen web.
-                    </p> */}
-          <Calendar />
-        </div>
       </main>
     </>
   );

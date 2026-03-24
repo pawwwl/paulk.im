@@ -83,6 +83,55 @@ body {
   }
 }
 
+/* ── Location Card Animations ── */
+
+@keyframes snowfall {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 0.5; }
+  100% { transform: translateY(310px) translateX(var(--drift, 12px)); opacity: 0; }
+}
+
+@keyframes topo-ring {
+  0%   { transform: scale(0.4); opacity: 0.55; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+@keyframes mountain-float-far {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(-18px); }
+}
+
+@keyframes mountain-float-mid {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(11px); }
+}
+
+@keyframes aurora-flow {
+  0%, 100% { opacity: 0.55; transform: scaleX(1) scaleY(1); }
+  35%       { opacity: 0.85; transform: scaleX(1.08) scaleY(1.15); }
+  70%       { opacity: 0.6;  transform: scaleX(0.97) scaleY(0.9); }
+}
+
+.mountain-layer-far {
+  animation: mountain-float-far 22s ease-in-out infinite;
+}
+
+.mountain-layer-mid {
+  animation: mountain-float-mid 16s ease-in-out infinite;
+}
+
+.aurora-glow {
+  background: radial-gradient(
+    ellipse 80% 100% at 55% 100%,
+    rgba(0, 229, 255, 0.07) 0%,
+    rgba(0, 180, 220, 0.04) 40%,
+    transparent 70%
+  );
+  animation: aurora-flow 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
 .embla__viewport {
   overflow: hidden;
 }

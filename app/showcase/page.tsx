@@ -7,7 +7,7 @@ export default () => {
       <main className="pt-24 pb-20">
         {/* <!-- Hero Section --> */}
         <section className="max-w-7xl mx-auto px-6 mb-24">
-          <div className="flex items-center justify-between mb-16">
+          <div className="flex items-center justify-between mb-10">
             <h2 className="text-5xl font-headline font-black tracking-tight uppercase text-on-surface">
               Show <span className="italic font-light text-primary">case</span>
             </h2>
@@ -16,7 +16,7 @@ export default () => {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 mb-4">
               <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00E5FF]">
+              <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-[#00E5FF]">
                 System.initialize("Calendar")
               </span>
             </div>
