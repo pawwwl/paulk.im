@@ -16,12 +16,10 @@ import {
 } from "./calendar.hooks";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import useEmblaCarousel from "embla-carousel-react";
 import dayjs, { Dayjs } from "dayjs";
-
-const VIEWS: CalendarView[] = ["day", "week", "month", "year"];
 
 export const Calendar = () => {
   const {
@@ -268,10 +266,12 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
                         {event._.name}
                       </p>
                       <time
-                        dateTime={event._.datetime}
+                        dateTime={event._.start_time}
                         className="ml-3 hidden flex-none text-gray-500 group-hover:text-indigo-600 xl:block dark:text-on-surface-variant"
                       >
-                        {dayjs(event._.datetime).format("h:mm")}
+                        {dayjs(event._.start_time)
+                          .tz("America/Denver")
+                          .format("h:mm")}
                       </time>
                     </a>
                   </li>
@@ -322,11 +322,16 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
                 <div className="flex items-center">
                   <Icon_Calendar className="size-4 mr-1" />
                   <time
-                    dateTime={event._.datetime}
+                    dateTime={event._.start_time}
                     className="text-sm text-gray-400 font-bold"
                   >
-                    {dayjs(event._.datetime).format("MMM D")} ·{" "}
-                    {dayjs(event._.datetime).format("h:mm A")}
+                    {dayjs(event._.start_time)
+                      .tz("America/Denver")
+                      .format("MMM D")}{" "}
+                    ·{" "}
+                    {dayjs(event._.start_time)
+                      .tz("America/Denver")
+                      .format("h:mm A")}
                   </time>
                 </div>
                 <p className="text-lg font-semibold text-gray-900 dark:text-on-surface my-1">
@@ -358,8 +363,14 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
 );
 
 import isToday from "dayjs/plugin/isToday";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 
 dayjs.extend(isToday);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TZ = "America/Denver";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   if (i === 0) return "12AM";
@@ -368,12 +379,10 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
   return `${i - 12}PM`;
 });
 
-// Convert "HH:MM" time to grid row (each hour = 12 rows, starting at row 2)
+// Convert datetime to grid row in MST (each hour = 12 rows, starting at row 2)
 function timeToGridRow(datetime: string): number {
-  const time = datetime.split("T")[1];
-  if (!time) return 2;
-  const [h, m] = time.split(":").map(Number);
-  return 2 + h * 12 + Math.floor((m / 60) * 12);
+  const local = dayjs(datetime).tz(TZ);
+  return 2 + local.hour() * 12 + Math.floor((local.minute() / 60) * 12);
 }
 
 const EVENT_COLORS = [
@@ -467,14 +476,14 @@ export const CalendarWeek = ({
             >
               <div className="row-end-1 h-7" />
               {HOURS.map((hour, i) => (
-                <>
-                  <div key={`hour-${hour}-${i}-full`}>
+                <Fragment key={`hour-${hour}-${i}-full`}>
+                  <div>
                     <div className="sticky left-0 z-20 -mt-2.5 -ml-14 w-14 pr-2 text-right text-xs/5 text-gray-400 dark:text-on-surface-variant">
                       {hour}
                     </div>
                   </div>
                   <div key={`${hour}-half`} />
-                </>
+                </Fragment>
               ))}
             </div>
 
@@ -496,12 +505,14 @@ export const CalendarWeek = ({
               {weekDays.map((day, colIndex) => {
                 const events = getEventsForDate(day.format("YYYY-MM-DD"));
                 return events.map((event, eventIndex) => {
-                  const row = timeToGridRow(event._.datetime);
+                  const row = timeToGridRow(event._.start_time);
+                  const endRow = timeToGridRow(event._.end_time);
+                  const span = Math.max(endRow - row, 6);
                   const color = EVENT_COLORS[eventIndex % EVENT_COLORS.length];
                   return (
                     <li
                       key={event.id}
-                      style={{ gridRow: `${row} / span 12` }}
+                      style={{ gridRow: `${row} / span ${span}` }}
                       className={`relative mt-px flex sm:col-start-${colIndex + 1}`}
                     >
                       <a
@@ -509,8 +520,8 @@ export const CalendarWeek = ({
                         className={`group absolute inset-1 flex flex-col overflow-y-auto rounded-lg p-2 text-xs/5 ${color}`}
                       >
                         <p className="order-1 font-semibold">{event._.name}</p>
-                        <time dateTime={event._.datetime}>
-                          {dayjs(event._.datetime).format("h:mm A")}
+                        <time dateTime={event._.start_time}>
+                          {dayjs(event._.start_time).tz(TZ).format("h:mm A")}
                         </time>
                       </a>
                     </li>

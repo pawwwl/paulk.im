@@ -2,6 +2,8 @@ import dayjs, { Dayjs } from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import isToday from "dayjs/plugin/isToday";
 import weekday from "dayjs/plugin/weekday";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import useSWR from "swr";
@@ -9,6 +11,10 @@ import useSWR from "swr";
 dayjs.extend(weekday);
 dayjs.extend(isoWeek);
 dayjs.extend(isToday);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TZ = "America/Denver";
 
 export type CalendarView = "month" | "week" | "day" | "year";
 
@@ -18,7 +24,8 @@ export type CalendarEvent = {
   created_at: string;
   _: {
     name: string;
-    datetime: string;
+    start_time: string;
+    end_time: string;
     location?: string;
   };
 };
@@ -218,7 +225,9 @@ export function useCalendar() {
   };
 
   const getEventsForDate = (dateStr: string): CalendarEvent[] => {
-    return (SWR.data || [])?.filter((E) => E._.datetime.startsWith(dateStr));
+    return (SWR.data || [])?.filter(
+      (E) => dayjs(E._.start_time).tz(TZ).format("YYYY-MM-DD") === dateStr,
+    );
   };
 
   // Generate month grid (only weeks with at least one current-month day, Sun-start)
