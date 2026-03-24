@@ -249,8 +249,8 @@ export function useCalendar() {
   };
 
   // Generate week days (Sun–Sat of current week)
-  const getWeekDays = (): Dayjs[] => {
-    const startOfWeek = currentDate.startOf("week");
+  const getWeekDays = (overrideDate?: Dayjs): Dayjs[] => {
+    const startOfWeek = (overrideDate ?? currentDate).startOf("week");
     return Array.from({ length: 7 }, (_, i) => startOfWeek.add(i, "day"));
   };
 

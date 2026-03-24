@@ -42,13 +42,20 @@ export const Calendar = () => {
   const SLIDES = [-2, -1, 0, 1, 2] as const;
   const CENTER = 2;
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, startIndex: CENTER });
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: false,
+    startIndex: CENTER,
+  });
 
   // Use refs so the settle handler never goes stale
   const goToPrevRef = useRef(goToPrev);
   const goToNextRef = useRef(goToNext);
-  useEffect(() => { goToPrevRef.current = goToPrev; });
-  useEffect(() => { goToNextRef.current = goToNext; });
+  useEffect(() => {
+    goToPrevRef.current = goToPrev;
+  });
+  useEffect(() => {
+    goToNextRef.current = goToNext;
+  });
 
   // On settle: step the month by the diff from center, then snap back
   useEffect(() => {
@@ -64,13 +71,17 @@ export const Calendar = () => {
       }
     };
     emblaApi.on("settle", onSettle);
-    return () => { emblaApi.off("settle", onSettle); };
+    return () => {
+      emblaApi.off("settle", onSettle);
+    };
   }, [emblaApi]);
 
-  // Always return to center when month changes (e.g. via Today button)
+  // Return to center when date or view changes (Today button, view switch)
   useEffect(() => {
-    emblaApi?.scrollTo(CENTER, true);
-  }, [emblaApi, currentDate]);
+    if (!emblaApi) return;
+    emblaApi.reInit();
+    emblaApi.scrollTo(CENTER, true);
+  }, [emblaApi, currentDate, view]);
 
   const handleSelectDate = (dateStr: string) => {
     setSelectedDate((prev) =>
@@ -78,38 +89,64 @@ export const Calendar = () => {
     );
   };
 
+  const usesCarousel = view === "month" || view === "week";
+
   return (
     <div className="flex h-full flex-col dark:bg-background">
+      <div className="flex mb-2">
+        <button
+          onClick={() => setView("month")}
+          className={`px-3.5 py-2 text-sm font-semibold rounded-l-md transition-colors ${
+            view === "month"
+              ? "bg-primary text-black"
+              : "bg-white text-gray-900 hover:bg-gray-50 dark:bg-white/10 dark:text-on-surface dark:hover:bg-white/20"
+          }`}
+        >
+          Monthly
+        </button>
+        <button
+          onClick={() => setView("week")}
+          className={`px-3.5 py-2 text-sm font-semibold rounded-r-md border-l border-gray-300 transition-colors dark:border-white/5 ${
+            view === "week"
+              ? "bg-primary text-black"
+              : "bg-white text-gray-900 hover:bg-gray-50 dark:bg-white/10 dark:text-on-surface dark:hover:bg-white/20"
+          }`}
+        >
+          Weekly
+        </button>
+      </div>
       <CalendarHeader
         label={headerLabel}
         view={view}
-        onPrev={view === "month" ? () => emblaApi?.scrollPrev() : goToPrev}
-        onNext={view === "month" ? () => emblaApi?.scrollNext() : goToNext}
+        onPrev={usesCarousel ? () => emblaApi?.scrollPrev() : goToPrev}
+        onNext={usesCarousel ? () => emblaApi?.scrollNext() : goToNext}
         onToday={goToToday}
         onViewChange={setView}
       />
-      {view === "month" && (
-        <div ref={emblaRef} className="overflow-hidden">
-          <div className="flex">
+      {usesCarousel && (
+        <div ref={emblaRef} className="overflow-hidden flex-1">
+          <div className="flex h-full">
             {SLIDES.map((offset) => (
               <div key={offset} style={{ flex: "0 0 100%", minWidth: 0 }}>
-                <CalendarMonth
-                  days={getMonthDays(currentDate.add(offset, "month"))}
-                  onSelectDate={handleSelectDate}
-                  selectedDate={selectedDate}
-                />
+                {view === "month" && (
+                  <CalendarMonth
+                    days={getMonthDays(currentDate.add(offset, "month"))}
+                    onSelectDate={handleSelectDate}
+                    selectedDate={selectedDate}
+                  />
+                )}
+                {view === "week" && (
+                  <CalendarWeek
+                    weekDays={getWeekDays(currentDate.add(offset, "week"))}
+                    getEventsForDate={getEventsForDate}
+                    selectedDate={selectedDate}
+                    onSelectDate={handleSelectDate}
+                  />
+                )}
               </div>
             ))}
           </div>
         </div>
-      )}
-      {view === "week" && (
-        <CalendarWeek
-          weekDays={getWeekDays()}
-          getEventsForDate={getEventsForDate}
-          selectedDate={selectedDate}
-          onSelectDate={handleSelectDate}
-        />
       )}
       {(view === "day" || view === "year") && (
         <div className="flex flex-1 items-center justify-center text-gray-400 dark:text-gray-600 text-sm font-mono">
@@ -163,77 +200,6 @@ export const CalendarHeader = ({
           <Icon_ChevronRight />
         </button>
       </div>
-
-      {/* Desktop view switcher */}
-      <div className="hidden md:ml-4 md:flex md:items-center">
-        <div className="hidden md:ml-4 md:flex md:items-center">
-          <div className="flex rounded-md shadow-xs ring-1 ring-inset ring-gray-300 dark:ring-white/5">
-            <button
-              onClick={() => onViewChange("month")}
-              className={`px-3.5 py-2 text-sm font-semibold rounded-l-md transition-colors ${
-                view === "month"
-                  ? "bg-indigo-600 text-white dark:bg-indigo-500"
-                  : "bg-white text-gray-900 hover:bg-gray-50 dark:bg-white/10 dark:text-on-surface dark:hover:bg-white/20"
-              }`}
-            >
-              Month
-            </button>
-            <button
-              onClick={() => onViewChange("week")}
-              className={`px-3.5 py-2 text-sm font-semibold rounded-r-md border-l border-gray-300 transition-colors dark:border-white/5 ${
-                view === "week"
-                  ? "bg-indigo-600 text-white dark:bg-indigo-500"
-                  : "bg-white text-gray-900 hover:bg-gray-50 dark:bg-white/10 dark:text-on-surface dark:hover:bg-white/20"
-              }`}
-            >
-              Week
-            </button>
-          </div>
-          <div className="ml-6 h-6 w-px bg-gray-300 dark:bg-white/10" />
-          <button className="ml-6 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400">
-            Add event
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      <Menu as="div" className="relative ml-6 md:hidden">
-        <MenuButton className="-mx-2 flex items-center rounded-full border border-transparent p-2 text-gray-400 hover:text-gray-500 dark:hover:text-white">
-          <span className="sr-only">Open menu</span>
-          <Icon_Ellipsis />
-        </MenuButton>
-        <MenuItems className="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-gray-100 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5 dark:divide-white/10 dark:bg-surface-container dark:ring-white/10">
-          <div className="py-1">
-            <MenuItem>
-              <button className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-on-surface-variant dark:hover:bg-white/5">
-                Create event
-              </button>
-            </MenuItem>
-          </div>
-          <div className="py-1">
-            <MenuItem>
-              <button
-                onClick={onToday}
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-on-surface-variant dark:hover:bg-white/5"
-              >
-                Go to today
-              </button>
-            </MenuItem>
-          </div>
-          <div className="py-1">
-            {VIEWS.map((v) => (
-              <MenuItem key={v}>
-                <button
-                  onClick={() => onViewChange(v)}
-                  className="block w-full px-4 py-2 text-left text-sm capitalize text-gray-700 hover:bg-gray-100 dark:text-on-surface-variant dark:hover:bg-white/5"
-                >
-                  {v} view
-                </button>
-              </MenuItem>
-            ))}
-          </div>
-        </MenuItems>
-      </Menu>
     </div>
   </header>
 );
@@ -251,7 +217,10 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
     {/* Day of week headers */}
     <div className="grid grid-cols-7 gap-px border-b border-gray-300 bg-gray-200 text-center text-xs/6 font-semibold text-gray-700 lg:flex-none dark:border-white/5 dark:bg-white/15 dark:text-primary">
       {DOW.map((d) => (
-        <div key={d} className="flex justify-center bg-white py-2 dark:bg-surface">
+        <div
+          key={d}
+          className="flex justify-center bg-white py-2 dark:bg-surface"
+        >
           <span className="sr-only sm:not-sr-only">{d}</span>
           <span className="sm:hidden">{d[0]}</span>
         </div>
@@ -281,7 +250,8 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
                   return "font-semibold text-indigo-600 dark:text-indigo-400";
                 if (day.isSelected)
                   return "bg-gray-900 font-semibold text-white dark:bg-white dark:text-gray-900";
-                if (day.isCurrentMonth) return "text-gray-900 dark:text-primary";
+                if (day.isCurrentMonth)
+                  return "text-gray-900 dark:text-primary";
                 return "text-gray-400 dark:text-primary/40";
               })()}`}
             >
