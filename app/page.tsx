@@ -2,7 +2,6 @@ import { ChatWidget } from "@/components/chat-widget";
 import { LocationCard } from "@/components/location-card";
 import { SKILLS } from "@/lib/data";
 import Image from "next/image";
-import { Calendar } from "./showcase/calendar.components";
 
 export default function Home() {
   return (
@@ -13,17 +12,102 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-8">
               <h1 className="text-6xl md:text-8xl font-headline font-black leading-[0.9] tracking-tighter text-on-surface uppercase">
-                Software <br />
+                Paul Kim <br />
                 <span className="text-accent-pink italic">{`</>`}</span>
-                <br />
-                Engineer
               </h1>
             </div>
             <div className="lg:col-span-4 pb-4">
               <p className="text-lg text-on-surface-variant leading-relaxed font-mono">
-                <span className="text-2xl font-bold">Hey there! I'm Paul </span>{" "}
+                <span className="text-2xl font-bold inline-flex items-center gap-2">
+                  Hey there!
+                  <svg
+                    viewBox="-2 0 34 42"
+                    width="24"
+                    height="30"
+                    fill="none"
+                    stroke="#00e5ff"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="inline-block align-middle wrist-wave"
+                  >
+                    <defs>
+                      <filter
+                        id="hglow"
+                        x="-40%"
+                        y="-40%"
+                        width="180%"
+                        height="180%"
+                      >
+                        <feGaussianBlur stdDeviation="1.4" result="b" />
+                        <feMerge>
+                          <feMergeNode in="b" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    <g className="hand-wave-group" filter="url(#hglow)">
+                      {/* Palm */}
+                      <rect
+                        x="5"
+                        y="22"
+                        width="22"
+                        height="16"
+                        rx="4"
+                        fill="rgba(0,229,255,0.07)"
+                      />
+                      {/* Thumb */}
+                      <path d="M 5,30 C 1,29 -0.5,25 0,23 C 0.5,21 2.5,20.5 5,22" />
+                      {/* Index finger */}
+                      <g className="finger-group finger-0">
+                        <rect
+                          x="6"
+                          y="8"
+                          width="4"
+                          height="16"
+                          rx="2"
+                          fill="rgba(0,229,255,0.07)"
+                        />
+                      </g>
+                      {/* Middle finger */}
+                      <g className="finger-group finger-1">
+                        <rect
+                          x="11"
+                          y="5"
+                          width="4"
+                          height="19"
+                          rx="2"
+                          fill="rgba(0,229,255,0.07)"
+                        />
+                      </g>
+                      {/* Ring finger */}
+                      <g className="finger-group finger-2">
+                        <rect
+                          x="16"
+                          y="7"
+                          width="4"
+                          height="17"
+                          rx="2"
+                          fill="rgba(0,229,255,0.07)"
+                        />
+                      </g>
+                      {/* Pinky finger */}
+                      <g className="finger-group finger-3">
+                        <rect
+                          x="21"
+                          y="11"
+                          width="4"
+                          height="13"
+                          rx="2"
+                          fill="rgba(0,229,255,0.07)"
+                        />
+                      </g>
+                    </g>
+                  </svg>
+                </span>{" "}
                 <br />
-                Keyboarding during the week / <br />
+                Coding during the week / <br />
                 Hiking on the weekends / <br />
                 Red Rocks in the summer / <br />
               </p>

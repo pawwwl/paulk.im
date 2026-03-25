@@ -38,10 +38,11 @@ export default function RootLayout({
                 Pawwwl_<span className="opacity-50 text-xs">v1.0</span>
               </div>
             </Link>
-
-            <button className="bg-primary text-on-primary px-6 py-2 font-mono text-xs font-bold uppercase hover:bg-[#c3f5ff] transition-all duration-150 active:scale-95">
-              <Link href="/showcase">SHOW_CASE</Link>
-            </button>
+            <Link href="/showcase">
+              <button className="bg-primary text-on-primary px-6 py-2 font-mono text-xs font-bold uppercase hover:bg-[#c3f5ff] transition-all duration-150 active:scale-95">
+                SHOW_CASE
+              </button>
+            </Link>
           </nav>
           {children}
           <footer className="w-full py-8 px-6 flex flex-col md:flex-row justify-between items-center gap-4 mt-auto border-t border-[#3b494c]/10 bg-[#0e0e0e]">
