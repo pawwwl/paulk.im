@@ -21,8 +21,8 @@ export default () => {
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 mb-4">
                 <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-[#00E5FF]">
-                  System.initialize("calendar")
+                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
+                  system.run("calendar")
                 </span>
               </div>
 
@@ -34,8 +34,8 @@ export default () => {
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 mb-4">
                 <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-[#00E5FF]">
-                  System.initialize("helix_in_space")
+                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
+                  system.run("helix_in_space")
                 </span>
               </div>
 
@@ -47,8 +47,8 @@ export default () => {
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 mb-4">
                 <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-[#00E5FF]">
-                  System.initialize("cyberpunk_terminal")
+                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
+                  system.run("cyberpunk_terminal")
                 </span>
               </div>
 
@@ -60,8 +60,8 @@ export default () => {
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 mb-4">
                 <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-[#00E5FF]">
-                  System.initialize('calvin_and_hobbes')
+                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
+                  system.run('calvin_and_hobbes')
                 </span>
               </div>
 
