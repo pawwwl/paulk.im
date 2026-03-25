@@ -27,6 +27,35 @@ export type CalendarEvent = {
     start_time: string;
     end_time: string;
     location?: string;
+    genre?: string;
+    style?: string;
+    highlights?: string;
+    past_event?: boolean;
+    phone_free?: boolean;
+    event_series?: string;
+    support_acts?: string[];
+    social?: {
+      instagram?: string;
+      spotify?: string;
+      twitter?: string;
+      website?: string;
+      ra?: string;
+    };
+    venue_details?: {
+      capacity: number;
+      type: string;
+      reputation: string;
+    };
+    weather?: {
+      forecast: string;
+    };
+    tickets?: {
+      status: "available" | "nearly_sold_out" | "sold_out" | "past";
+      price_range?: string;
+      notes?: string;
+    };
+    should_go_score?: number | null;
+    should_go_notes?: string;
   };
 };
 

@@ -2,17 +2,64 @@
 
 import {
   Icon_Calendar,
+  Icon_ChevronDown,
   Icon_ChevronLeft,
   Icon_ChevronRight,
   Icon_Location,
 } from "@/components/icons";
+
+function ScoreBadge({ score }: { score: number }) {
+  const color =
+    score >= 9
+      ? "bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400"
+      : score >= 7
+        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-400"
+        : "bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-400";
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-semibold ${color}`}
+    >
+      ★ {score}/10
+    </span>
+  );
+}
+
+function TicketBadge({
+  status,
+  price_range,
+}: {
+  status: string;
+  price_range?: string;
+}) {
+  if (status === "past") return null;
+  const styles: Record<string, string> = {
+    sold_out: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400",
+    nearly_sold_out:
+      "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400",
+    available:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
+  };
+  const labels: Record<string, string> = {
+    sold_out: "Sold Out",
+    nearly_sold_out: "Almost Gone",
+    available: "Available",
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold ${styles[status] ?? styles.available}`}
+    >
+      🎟 {labels[status] ?? status}
+      {price_range ? ` · ${price_range}` : ""}
+    </span>
+  );
+}
 import {
   useCalendar,
   CalendarView,
   CalendarDay,
   CalendarEvent,
 } from "./calendar.hooks";
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import useEmblaCarousel from "embla-carousel-react";
 import dayjs, { Dayjs } from "dayjs";
@@ -210,6 +257,145 @@ type Props = {
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function EventListItem({ event }: { event: CalendarEvent }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasMore =
+    (event._.support_acts && event._.support_acts.length > 0) ||
+    !!event._.weather ||
+    !!event._.should_go_notes ||
+    !!(event._.social && Object.values(event._.social).some(Boolean));
+
+  return (
+    <li
+      className="flex flex-col p-4 gap-2 hover:bg-gray-50 dark:hover:bg-white/5"
+      onClick={() => setExpanded((e) => !e)}
+    >
+      {/* Date/time */}
+      <div className="flex items-center gap-2">
+        <Icon_Calendar className="size-4 text-gray-400" />
+        <time
+          dateTime={event._.start_time}
+          className="text-sm text-gray-400 font-bold"
+        >
+          {dayjs(event._.start_time).tz("America/Denver").format("MMM D")}
+          {" · "}
+          {dayjs(event._.start_time).tz("America/Denver").format("h:mm A")}
+          {" – "}
+          {dayjs(event._.end_time).tz("America/Denver").format("h:mm A")}
+        </time>
+      </div>
+
+      {/* Name + badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-lg font-semibold text-gray-900 dark:text-on-surface">
+          {event._.name}
+        </p>
+        {event._.should_go_score != null && (
+          <ScoreBadge score={event._.should_go_score} />
+        )}
+        {event._.tickets && (
+          <TicketBadge
+            status={event._.tickets.status}
+            price_range={event._.tickets.price_range}
+          />
+        )}
+        {event._.phone_free && (
+          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400">
+            📵 Phone-Free
+          </span>
+        )}
+        {event._.past_event && (
+          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400">
+            Past
+          </span>
+        )}
+      </div>
+
+      {/* Genre */}
+      {event._.genre && (
+        <p className="text-xs text-gray-500 dark:text-on-surface-variant">
+          {event._.genre}
+        </p>
+      )}
+
+      {/* Location */}
+      {event._.location && (
+        <a
+          href={`https://maps.google.com/?q=${encodeURIComponent(event._.location)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-sm text-indigo-600 hover:underline dark:text-indigo-400 w-fit"
+        >
+          <Icon_Location className="size-4" />
+          {event._.location}
+          {event._.venue_details && (
+            <span className="text-gray-400 dark:text-on-surface-variant">
+              · {event._.venue_details.type} ·{" "}
+              {event._.venue_details.capacity.toLocaleString()} cap
+            </span>
+          )}
+        </a>
+      )}
+
+      {/* Accordion — grid-rows trick animates height without JS measurement */}
+      {hasMore && (
+        <div
+          className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+        >
+          <div className="overflow-hidden">
+            <div className="flex flex-col gap-2 pt-1">
+              {event._.support_acts && event._.support_acts.length > 0 && (
+                <p className="text-xs text-gray-500 dark:text-on-surface-variant">
+                  <span className="font-medium">Support:</span>{" "}
+                  {event._.support_acts.join(", ")}
+                </p>
+              )}
+              {event._.weather && (
+                <p className="text-xs text-gray-500 dark:text-on-surface-variant">
+                  🌤 {event._.weather.forecast}
+                </p>
+              )}
+              {event._.should_go_notes && (
+                <p className="text-xs text-gray-600 dark:text-on-surface-variant italic">
+                  {event._.should_go_notes}
+                </p>
+              )}
+              {event._.social && (
+                <div className="flex flex-wrap gap-3 text-xs">
+                  {event._.social.instagram && (
+                    <a href={event._.social.instagram} target="_blank" rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline dark:text-indigo-400">Instagram</a>
+                  )}
+                  {event._.social.spotify && (
+                    <a href={event._.social.spotify} target="_blank" rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline dark:text-indigo-400">Spotify</a>
+                  )}
+                  {event._.social.twitter && (
+                    <a href={event._.social.twitter} target="_blank" rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline dark:text-indigo-400">X / Twitter</a>
+                  )}
+                  {event._.social.website && (
+                    <a href={event._.social.website} target="_blank" rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline dark:text-indigo-400">Website</a>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toggle chevron */}
+      {hasMore && (
+        <Icon_ChevronDown
+          className={`size-4 self-center text-gray-400 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
+        />
+      )}
+    </li>
+  );
+}
+
 export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
   <div className="shadow-sm ring-1 ring-black/5 lg:flex lg:flex-auto lg:flex-col dark:ring-white/5">
     {/* Day of week headers */}
@@ -261,13 +447,26 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
               <ol className="mt-2 hidden lg:block w-full text-left">
                 {day.events.slice(0, 2).map((event) => (
                   <li key={event.id}>
-                    <a href={"#"} className="group flex">
+                    <a href={"#"} className="group flex items-center gap-1">
                       <p className="flex-auto truncate font-medium text-gray-900 group-hover:text-indigo-600 dark:text-on-surface dark:group-hover:text-indigo-400">
                         {event._.name}
                       </p>
+                      {event._.should_go_score != null && (
+                        <span
+                          className={`flex-none text-[10px] font-bold ${
+                            event._.should_go_score >= 9
+                              ? "text-green-600 dark:text-green-400"
+                              : event._.should_go_score >= 7
+                                ? "text-yellow-600 dark:text-yellow-400"
+                                : "text-orange-600 dark:text-orange-400"
+                          }`}
+                        >
+                          ★{event._.should_go_score}
+                        </span>
+                      )}
                       <time
                         dateTime={event._.start_time}
-                        className="ml-3 hidden flex-none text-gray-500 group-hover:text-indigo-600 xl:block dark:text-on-surface-variant"
+                        className="ml-1 hidden flex-none text-gray-500 group-hover:text-indigo-600 xl:block dark:text-on-surface-variant"
                       >
                         {dayjs(event._.start_time)
                           .tz("America/Denver")
@@ -314,47 +513,7 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => (
               </li>
             );
           return events.map((event) => (
-            <li
-              key={event.id}
-              className="group flex p-4 pr-6 hover:bg-gray-50 dark:hover:bg-white/5"
-            >
-              <div className="flex-auto">
-                <div className="flex items-center">
-                  <Icon_Calendar className="size-4 mr-1" />
-                  <time
-                    dateTime={event._.start_time}
-                    className="text-sm text-gray-400 font-bold"
-                  >
-                    {dayjs(event._.start_time)
-                      .tz("America/Denver")
-                      .format("MMM D")}{" "}
-                    ·{" "}
-                    {dayjs(event._.start_time)
-                      .tz("America/Denver")
-                      .format("h:mm A")}
-                  </time>
-                </div>
-                <p className="text-lg font-semibold text-gray-900 dark:text-on-surface my-1">
-                  {event._.name}
-                </p>
-                {event._.location && (
-                  <a
-                    href={`https://maps.google.com/?q=${encodeURIComponent(event._.location)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-0.5 flex items-center text-indigo-600 hover:underline dark:text-indigo-400"
-                  >
-                    <Icon_Location className="size-4 mr-1" /> {event._.location}
-                  </a>
-                )}
-              </div>
-              <a
-                href={""}
-                className="ml-6 flex-none self-center rounded-md bg-white px-3 py-2 font-semibold text-gray-900 opacity-0 shadow-xs ring-1 ring-inset ring-gray-300 group-hover:opacity-100 dark:bg-white/10 dark:text-on-surface dark:ring-white/5"
-              >
-                Edit
-              </a>
-            </li>
+            <EventListItem key={event.id} event={event} />
           ));
         })()}
       </ol>
@@ -519,10 +678,25 @@ export const CalendarWeek = ({
                         href={""}
                         className={`group absolute inset-1 flex flex-col overflow-y-auto rounded-lg p-2 text-xs/5 ${color}`}
                       >
-                        <p className="order-1 font-semibold">{event._.name}</p>
+                        <p className="order-1 font-semibold leading-tight">
+                          {event._.name}
+                        </p>
                         <time dateTime={event._.start_time}>
                           {dayjs(event._.start_time).tz(TZ).format("h:mm A")}
                         </time>
+                        {event._.location && (
+                          <p className="truncate opacity-75">
+                            {event._.location}
+                          </p>
+                        )}
+                        {event._.should_go_score != null && (
+                          <p className="font-bold">
+                            ★ {event._.should_go_score}/10
+                          </p>
+                        )}
+                        {event._.tickets?.status === "sold_out" && (
+                          <p className="font-semibold opacity-90">Sold Out</p>
+                        )}
                       </a>
                     </li>
                   );
