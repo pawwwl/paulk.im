@@ -236,7 +236,7 @@ export const ChatWidget = () => {
             <span className="absolute left-4 font-mono text-primary">&gt;</span>
             <input
               className="w-full bg-transparent border border-outline/50 focus:border-primary/50 focus:ring-0 text-on-surface font-mono text-sm pl-10 pr-4 py-3 placeholder:text-on-surface-variant/30 outline-none"
-              placeholder="Type a message to the architect..."
+              placeholder="AMA..."
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
