@@ -1,4 +1,3 @@
-import { Calendar } from "./calendar.components";
 import { ThreeSceneLoader } from "./three-loader";
 import { CyberpunkTerminalLoader } from "./cyberpunk-terminal-loader";
 import { CalvinHobbesLoader } from "./calvin-hobbes-loader";

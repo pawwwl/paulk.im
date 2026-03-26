@@ -1,6 +1,5 @@
 import { Calendar } from "@/components/calendar";
 import { ChatWidget } from "@/components/chat-widget";
-import { LazySection } from "@/components/lazy-section";
 import { LocationCard } from "@/components/location-card";
 import { SKILLS, TIME_LINE } from "@/lib/data";
 import Image from "next/image";
