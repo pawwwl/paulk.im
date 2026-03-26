@@ -19,17 +19,17 @@ export const TIME_LINE = [
     name: "US Army",
     role: "Combat Medic",
     description:
-      "Kept soldiers alive in the field. Learned that debugging a human under pressure is not unlike debugging production at 2am — stay calm, triage fast, fix what matters.",
+      "Dropped out of school to enlist and toughen up. Turned out to be some of the hardest and defining years of my life.",
     date: "Feb 2013",
     dateTime: "2013-02",
   },
   {
     name: "Catalyst Healthcare",
-    role: "Software Engineer",
+    role: "Frontend Developer",
     description:
       "Built inventory management web interface for healthcare providers. Primarily using Blazor and .NET.",
-    date: "Mar 2019",
-    dateTime: "2019-03",
+    date: "Mar 2018",
+    dateTime: "2018-03",
     tools: ["C#", ".NET", "Blazor", "SQL"],
   },
   {
@@ -37,15 +37,15 @@ export const TIME_LINE = [
     role: "Software Engineer",
     description:
       "Worked on the platform powering fleet managers to track vehicles real-time. Implemented a variety of client-side map features, such as geofencing, telematics, etc. Used tools such as ElasticSearch to build a real-time search engine with dynamic filtering for thousands of vehicles.",
-    date: "Mar 2021",
-    dateTime: "2021-03",
+    date: "Mar 2020",
+    dateTime: "2020-05",
     tools: ["Next.js", "ElasticSearch", "Google Maps"],
   },
   {
     name: "Audubon Companies",
     role: "Software Engineer",
     description:
-      "Tech Lead for inventory and report management project for pipeline inspections with offline first mobile app. A chance to own a product end-to-end and see the impact first-hand.",
+      "Tech Lead for inventory and report management project for pipeline inspections. Most difficult component being offline first mobile app with react native. A chance to own a product end-to-end and see the impact first-hand.",
     date: "Sep 2022",
     dateTime: "2022-09",
     tools: ["Next.js", "Mongo", "SQL Server", "Azure", "React Native"],

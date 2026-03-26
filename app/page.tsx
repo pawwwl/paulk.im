@@ -1,4 +1,6 @@
+import { Calendar } from "@/components/calendar";
 import { ChatWidget } from "@/components/chat-widget";
+import { LazySection } from "@/components/lazy-section";
 import { LocationCard } from "@/components/location-card";
 import { SKILLS, TIME_LINE } from "@/lib/data";
 import Image from "next/image";
@@ -116,10 +118,9 @@ export default function Home() {
             ))}
           </div>
         </div>
-
         {/* <!-- Bento Grid: Tech-centric Artifacts --> */}
-        <section className="mb-40">
-          <div className="flex items-center justify-between mb-16">
+        <section className="mb-20">
+          <div className="flex items-center justify-between mb-10">
             <h2 className="text-5xl font-headline font-black tracking-tight uppercase text-on-surface">
               Offline{" "}
               <span className="italic font-light text-primary">
@@ -211,6 +212,20 @@ export default function Home() {
             </div>
             {/* <!-- Location --> */}
             <LocationCard />
+          </div>
+        </section>
+        <section>
+          <div className="mb-20">
+            <div className="flex items-center justify-between mb-10">
+              <h2 className="text-5xl font-headline font-black tracking-tight uppercase text-on-surface">
+                My{" "}
+                <span className="italic font-light text-primary">Calendar</span>
+              </h2>
+              <span className="h-[1px] bg-outline flex-grow mx-8 hidden md:block"></span>
+            </div>
+            <div className="max-w-4xl">
+              <Calendar />
+            </div>
           </div>
         </section>
       </main>

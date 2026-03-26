@@ -17,18 +17,6 @@ export default () => {
             </h2>
             <span className="h-[1px] bg-outline flex-grow mx-8 hidden md:block"></span>
           </div>
-          <LazySection placeholderHeight="auto">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
-                  system.run("calendar")
-                </span>
-              </div>
-
-              <Calendar />
-            </div>
-          </LazySection>
 
           <LazySection>
             <div className="max-w-3xl">

@@ -24,12 +24,11 @@ export function LazySection({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
+        setVisible(entry.isIntersecting);
       },
-      { threshold }
+      // rootMargin keeps the section mounted 200px before/after viewport
+      // so it doesn't unmount while partially visible during scrolling
+      { threshold, rootMargin: "200px 0px 200px 0px" }
     );
 
     observer.observe(el);
