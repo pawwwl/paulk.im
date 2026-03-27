@@ -1,5 +1,6 @@
 import { Calendar } from "@/components/calendar";
 import { ChatWidget } from "@/components/chat-widget";
+import { DrawingCanvas } from "@/components/drawing-canvas";
 import { LocationCard } from "@/components/location-card";
 import { SKILLS, TIME_LINE } from "@/lib/data";
 import Image from "next/image";
@@ -166,31 +167,8 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            {/* <!-- Elevation Card --> */}
-            <div className="bg-surface-container border border-outline p-8 relative rounded-none flex flex-col justify-between overflow-hidden group min-h-[250px]">
-              <div
-                className="absolute inset-0 opacity-40"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(circle, rgba(0,229,255,0.12) 1px, transparent 1px)",
-                  backgroundSize: "18px 18px",
-                }}
-              />
-              <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-linear-to-t from-primary/5 to-transparent" />
-              <div className="relative z-10">
-                <p className="text-primary text-[10px] uppercase tracking-widest font-bold font-mono">
-                  ELEVATION
-                </p>
-              </div>
-              <div className="relative z-10">
-                <h4 className="text-on-surface font-headline font-black uppercase leading-none text-5xl">
-                  5,280
-                </h4>
-                <p className="text-on-surface-variant font-mono text-[10px] uppercase tracking-widest mt-2">
-                  feet above sea level
-                </p>
-              </div>
-            </div>
+            {/* <!-- Drawing Canvas --> */}
+            <DrawingCanvas />
             {/* <!-- Most Used Key --> */}
             <div className="relative bg-surface-container border border-outline p-8 flex flex-col justify-between overflow-hidden group">
               <div

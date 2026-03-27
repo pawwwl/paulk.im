@@ -63,7 +63,6 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import useEmblaCarousel from "embla-carousel-react";
 import dayjs, { Dayjs } from "dayjs";
-
 export const Calendar = () => {
   const {
     currentDate,
@@ -81,8 +80,8 @@ export const Calendar = () => {
     setSelectedDate,
   } = useCalendar();
 
-  const SLIDES = [-2, -1, 0, 1, 2] as const;
-  const CENTER = 2;
+  const SLIDES = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6] as const;
+  const CENTER = 6;
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,

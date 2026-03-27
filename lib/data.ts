@@ -19,7 +19,7 @@ export const TIME_LINE = [
     name: "US Army",
     role: "Combat Medic",
     description:
-      "Dropped out of school for a new adventure - ended up getting way more than I could handle. My time in the military turned out to be some of the hardest and rewarding years of my life.",
+      "Dropped out of school to try something new - ended up biting more than I could chew. The military turned out to be some of the hardest but also rewarding years of my life.",
     date: "Feb 2013",
     dateTime: "2013-02",
   },
