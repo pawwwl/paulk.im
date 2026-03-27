@@ -166,46 +166,58 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            {/* <!-- Small Fact --> */}
+            {/* <!-- Elevation Card --> */}
             <div className="bg-surface-container border border-outline p-8 relative rounded-none flex flex-col justify-between overflow-hidden group min-h-[250px]">
-              <Image
-                fill
-                loading="eager"
-                alt="New Console Illustration"
-                className="absolute inset-0 w-full h-full object-cover brightness-50 group-hover:brightness-75 transition-all duration-700"
-                src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/seafood.png"
+              <div
+                className="absolute inset-0 opacity-40"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle, rgba(0,229,255,0.12) 1px, transparent 1px)",
+                  backgroundSize: "18px 18px",
+                }}
               />
-              <div className="absolute inset-0 bg-black/40"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-linear-to-t from-primary/5 to-transparent" />
               <div className="relative z-10">
                 <p className="text-primary text-[10px] uppercase tracking-widest font-bold font-mono">
-                  Fuel_source
+                  ELEVATION
                 </p>
               </div>
               <div className="relative z-10">
-                <h4 className="text-on-surface text-3xl font-headline font-bold uppercase leading-tight">
-                  Seafood
+                <h4 className="text-on-surface font-headline font-black uppercase leading-none text-5xl">
+                  5,280
                 </h4>
+                <p className="text-on-surface-variant font-mono text-[10px] uppercase tracking-widest mt-2">
+                  feet above sea level
+                </p>
               </div>
             </div>
-            {/* <!-- Favorite Pokemon --> */}
+            {/* <!-- Most Used Key --> */}
             <div className="relative bg-surface-container border border-outline p-8 flex flex-col justify-between overflow-hidden group">
-              <img
-                alt="A minimalist, stylized vector illustration of Shuckle #213, a yellow turtle-like Pokemon with a red shell and multiple holes, in a clean Terminal Noir style."
-                className="absolute inset-0 w-full h-full object-cover opacity-20 transition-all duration-500"
-                src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/shuckle.png"
+              <div
+                className="absolute inset-0 opacity-30"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(rgba(0,229,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.06) 1px, transparent 1px)",
+                  backgroundSize: "24px 24px",
+                }}
               />
               <div className="relative z-10">
                 <p className="text-primary text-[10px] uppercase tracking-widest font-bold font-mono">
-                  FAVORITE_POKEMON
+                  MOST_USED_KEY
                 </p>
-                <h4 className="text-on-surface text-3xl font-headline font-bold uppercase mt-4">
-                  SHUCKLE <br />
-                  <small className="text-lg">#213</small>
+                <h4 className="text-on-surface text-4xl font-headline font-bold uppercase mt-4 leading-none">
+                  ⌘Z
                 </h4>
+                <p className="text-on-surface-variant font-mono text-xs mt-2 leading-relaxed">
+                  always undoing something
+                </p>
               </div>
-              <div className="relative z-10 mt-4">
-                <span className="px-2 py-1 bg-accent-green/20 text-accent-green font-mono text-[10px] border border-accent-green/30 uppercase">
-                  Berry Juice
+              <div className="relative z-10 mt-4 flex gap-2 flex-wrap">
+                <span className="px-2 py-1 bg-accent-pink/20 text-accent-pink font-mono text-[10px] border border-accent-pink/30 uppercase">
+                  hourly
+                </span>
+                <span className="px-2 py-1 bg-primary/20 text-primary font-mono text-[10px] border border-primary/30 uppercase">
+                  no regrets
                 </span>
               </div>
             </div>

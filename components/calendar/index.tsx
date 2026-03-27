@@ -297,6 +297,18 @@ export const CalendarHeader = ({
                 );
               })}
             </div>
+            {/* Today shortcut */}
+            <div className="mt-2 border-t border-gray-100 pt-2 dark:border-white/10">
+              <button
+                onClick={() => {
+                  onGoToDate(dayjs().startOf("month"));
+                  setOpen(false);
+                }}
+                className="w-full rounded-lg py-1.5 text-sm font-semibold text-indigo-600 hover:bg-gray-100 dark:text-indigo-400 dark:hover:bg-white/10 transition-colors"
+              >
+                Today
+              </button>
+            </div>
           </div>
         )}
       </div>
