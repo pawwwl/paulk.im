@@ -73,6 +73,7 @@ export const Calendar = () => {
     goToPrev,
     goToNext,
     goToToday,
+    goToDate,
     getMonthDays,
     getWeekDays,
     getEventsForDate,
@@ -163,6 +164,8 @@ export const Calendar = () => {
       <CalendarHeader
         label={headerLabel}
         view={view}
+        currentDate={currentDate}
+        onGoToDate={goToDate}
         onPrev={usesCarousel ? () => emblaApi?.scrollPrev() : goToPrev}
         onNext={usesCarousel ? () => emblaApi?.scrollNext() : goToNext}
         onToday={goToToday}
@@ -202,9 +205,13 @@ export const Calendar = () => {
   );
 };
 
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 export const CalendarHeader = ({
   label,
   view,
+  currentDate,
+  onGoToDate,
   onPrev,
   onNext,
   onToday,
@@ -212,15 +219,92 @@ export const CalendarHeader = ({
 }: {
   label: string;
   view: CalendarView;
+  currentDate: Dayjs;
+  onGoToDate: (date: Dayjs) => void;
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
   onViewChange: (v: CalendarView) => void;
-}) => (
+}) => {
+  const [open, setOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(currentDate.year());
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!dropdownRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  useEffect(() => {
+    setPickerYear(currentDate.year());
+  }, [currentDate]);
+
+  return (
   <header className="flex items-center justify-between border-b border-gray-200 px-6 py-4 lg:flex-none dark:border-white/10 dark:bg-surface-container/80">
-    <h1 className="text-base font-semibold text-gray-900 dark:text-primary">
-      <time>{label}</time>
-    </h1>
+    {view === "month" ? (
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="flex items-center gap-1 text-base font-semibold text-gray-900 hover:text-indigo-600 dark:text-primary dark:hover:text-indigo-400"
+        >
+          <time>{label}</time>
+          <Icon_ChevronDown className={`size-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (
+          <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl bg-white p-3 shadow-lg ring-1 ring-black/10 dark:bg-surface-container dark:ring-white/10">
+            {/* Year navigation */}
+            <div className="mb-2 flex items-center justify-between">
+              <button
+                onClick={() => setPickerYear((y) => y - 1)}
+                className="flex size-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 dark:text-on-surface-variant dark:hover:bg-white/10"
+              >
+                <Icon_ChevronLeft />
+              </button>
+              <span className="text-sm font-semibold text-gray-900 dark:text-on-surface">{pickerYear}</span>
+              <button
+                onClick={() => setPickerYear((y) => y + 1)}
+                className="flex size-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 dark:text-on-surface-variant dark:hover:bg-white/10"
+              >
+                <Icon_ChevronRight />
+              </button>
+            </div>
+            {/* Month grid */}
+            <div className="grid grid-cols-3 gap-1">
+              {MONTHS.map((month, i) => {
+                const isSelected = currentDate.month() === i && currentDate.year() === pickerYear;
+                const isToday = dayjs().month() === i && dayjs().year() === pickerYear;
+                return (
+                  <button
+                    key={month}
+                    onClick={() => {
+                      onGoToDate(dayjs().year(pickerYear).month(i).startOf("month"));
+                      setOpen(false);
+                    }}
+                    className={`rounded-lg py-1.5 text-sm font-medium transition-colors ${
+                      isSelected
+                        ? "bg-indigo-600 text-white dark:bg-indigo-500"
+                        : isToday
+                          ? "text-indigo-600 dark:text-indigo-400 hover:bg-gray-100 dark:hover:bg-white/10"
+                          : "text-gray-700 dark:text-on-surface hover:bg-gray-100 dark:hover:bg-white/10"
+                    }`}
+                  >
+                    {month}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    ) : (
+      <h1 className="text-base font-semibold text-gray-900 dark:text-primary">
+        <time>{label}</time>
+      </h1>
+    )}
     <div className="flex items-center">
       <div className="relative flex items-center rounded-md bg-white shadow-xs outline -outline-offset-1 outline-gray-300 md:items-stretch dark:bg-white/10 dark:shadow-none dark:outline-white/5">
         <button
@@ -247,7 +331,8 @@ export const CalendarHeader = ({
       </div>
     </div>
   </header>
-);
+  );
+};
 
 type Props = {
   days: CalendarDay[];

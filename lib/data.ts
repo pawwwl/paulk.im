@@ -19,7 +19,7 @@ export const TIME_LINE = [
     name: "US Army",
     role: "Combat Medic",
     description:
-      "Dropped out of school to enlist and toughen up. Turned out to be some of the hardest and defining years of my life.",
+      "Dropped out of school for a new adventure - ended up getting way more than I could handle. My time in the military turned out to be some of the hardest and rewarding years of my life.",
     date: "Feb 2013",
     dateTime: "2013-02",
   },
@@ -27,7 +27,7 @@ export const TIME_LINE = [
     name: "Catalyst Healthcare",
     role: "Frontend Developer",
     description:
-      "Built inventory management web interface for healthcare providers. Primarily using Blazor and .NET.",
+      "First job in the industry - thrown into the world of C#, .NET, and Blazor. Built the web interface for the company's inventory management system for healthcare providers. Learned a tremendous amount working with an amazing group of engineers.",
     date: "Mar 2018",
     dateTime: "2018-03",
     tools: ["C#", ".NET", "Blazor", "SQL"],
@@ -36,7 +36,7 @@ export const TIME_LINE = [
     name: "Fluid Truck",
     role: "Software Engineer",
     description:
-      "Worked on the platform powering fleet managers to track vehicles real-time. Implemented a variety of client-side map features, such as geofencing, telematics, etc. Used tools such as ElasticSearch to build a real-time search engine with dynamic filtering for thousands of vehicles.",
+      "Second role, working with a bigger team. Really applied myself in taking on more responsibility. Worked on the company platform powering fleet managers to track vehicles real-time. Implemented a variety of client-side map features, such as geofencing with google maps, telematics, and event tracking with Elastic Search",
     date: "Mar 2020",
     dateTime: "2020-05",
     tools: ["Next.js", "ElasticSearch", "Google Maps"],
@@ -45,7 +45,7 @@ export const TIME_LINE = [
     name: "Audubon Companies",
     role: "Software Engineer",
     description:
-      "Tech Lead for inventory and report management project for pipeline inspections. Most difficult component being offline first mobile app with react native. A chance to own a product end-to-end and see the impact first-hand.",
+      "Current role, Tech Lead for inventory and report management project working with pipeline inspections. Most difficult component being offline first mobile app with react native. Next project, working on in-house employee assessment web application.",
     date: "Sep 2022",
     dateTime: "2022-09",
     tools: ["Next.js", "Mongo", "SQL Server", "Azure", "React Native"],

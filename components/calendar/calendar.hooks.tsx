@@ -297,6 +297,11 @@ export function useCalendar() {
       ? `${currentDate.startOf("week").format("MMM D")} – ${currentDate.endOf("week").format("MMM D, YYYY")}`
       : currentDate.format("MMMM YYYY");
 
+  const goToDate = (date: Dayjs) => {
+    setCurrentDate(date);
+    setSelectedDate(null);
+  };
+
   return {
     currentDate,
     selectedDate,
@@ -306,6 +311,7 @@ export function useCalendar() {
     goToPrev,
     goToNext,
     goToToday,
+    goToDate,
     getMonthDays,
     getWeekDays,
     getEventsForDate,
