@@ -27,7 +27,7 @@ export const TIME_LINE = [
     name: "Catalyst Healthcare",
     role: "Frontend Developer",
     description:
-      "First job in the industry - thrown into the world of C#, .NET, and Blazor. Built the web interface for the company's inventory management system for healthcare providers. Learned a tremendous amount working with an amazing group of engineers.",
+      "First job as a dev. Thrown into C# land, .NET, and Blazor. Worked on the web interface for the company's client-side inventory management system used by pharmacies and other healthcare providers. A tremendous period of growth, working with an amazing group of engineers.",
     date: "Mar 2018",
     dateTime: "2018-03",
     tools: ["C#", ".NET", "Blazor", "SQL"],
@@ -36,7 +36,7 @@ export const TIME_LINE = [
     name: "Fluid Truck",
     role: "Software Engineer",
     description:
-      "Second role, working with a bigger team. Really applied myself in taking on more responsibility. Worked on the company platform powering fleet managers to track vehicles real-time. Implemented a variety of client-side map features, such as geofencing with google maps, telematics, and event tracking with Elastic Search",
+      "Second role, working with a bigger team. Eager to take on more responsibility and have bigger impact. Worked on the company platform powering fleet managers to track vehicles real-time. Implemented a variety of client-side map features, such as geofencing with google maps, telematics, and event tracking with Elastic Search. Collaborated with amazing people throughout the organization - product, designers, marketing, etc",
     date: "Mar 2020",
     dateTime: "2020-05",
     tools: ["Next.js", "ElasticSearch", "Google Maps"],
@@ -45,7 +45,7 @@ export const TIME_LINE = [
     name: "Audubon Companies",
     role: "Software Engineer",
     description:
-      "Current role, Tech Lead for inventory and report management project working with pipeline inspections. Most difficult component being offline first mobile app with react native. Next project, working on in-house employee assessment web application.",
+      "Current role, small team - big company with abundant opportunities to spread my wings. First project - Tech Lead for a v2 rewrite of inventory and report management app suite for pipeline inspections. Most difficult component integrating an offline-first mobile app in React Native. Next project - currently working on building an in-house solution for employee performance and talent assessment. First time implementing event-sourcing architecture ",
     date: "Sep 2022",
     dateTime: "2022-09",
     tools: ["Next.js", "Mongo", "SQL Server", "Azure", "React Native"],
