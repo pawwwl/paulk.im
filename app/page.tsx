@@ -1,6 +1,8 @@
 import { Calendar } from "@/components/calendar";
 import { ChatWidget } from "@/components/chat-widget";
-import { DrawingCanvas } from "@/components/drawing-canvas";
+// import { AirHockey } from "@/components/air-hockey";
+import { DvdCornerEmoji } from "@/components/dvd-corner-emoji";
+import { TronGame } from "@/components/tron-game";
 import { LocationCard } from "@/components/location-card";
 import { SKILLS, TIME_LINE } from "@/lib/data";
 import Image from "next/image";
@@ -167,48 +169,21 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            {/* <!-- Drawing Canvas --> */}
-            <DrawingCanvas />
-            {/* <!-- Most Used Key --> */}
-            <div className="relative bg-surface-container border border-outline p-8 flex flex-col justify-between overflow-hidden group">
-              <div
-                className="absolute inset-0 opacity-30"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(rgba(0,229,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.06) 1px, transparent 1px)",
-                  backgroundSize: "24px 24px",
-                }}
-              />
-              <div className="relative z-10">
-                <p className="text-primary text-[10px] uppercase tracking-widest font-bold font-mono">
-                  MOST_USED_KEY
-                </p>
-                <h4 className="text-on-surface text-4xl font-headline font-bold uppercase mt-4 leading-none">
-                  ⌘Z
-                </h4>
-                <p className="text-on-surface-variant font-mono text-xs mt-2 leading-relaxed">
-                  always undoing something
-                </p>
-              </div>
-              <div className="relative z-10 mt-4 flex gap-2 flex-wrap">
-                <span className="px-2 py-1 bg-accent-pink/20 text-accent-pink font-mono text-[10px] border border-accent-pink/30 uppercase">
-                  hourly
-                </span>
-                <span className="px-2 py-1 bg-primary/20 text-primary font-mono text-[10px] border border-primary/30 uppercase">
-                  no regrets
-                </span>
-              </div>
-            </div>
             {/* <!-- Location --> */}
             <LocationCard />
+
+            {/* <!-- Tron Game --> */}
+            <TronGame />
+            {/* <!-- DVD Logo --> */}
+            <DvdCornerEmoji />
           </div>
         </section>
         <section>
           <div className="mb-20">
             <div className="flex items-center justify-between mb-10">
               <h2 className="text-5xl font-headline font-black tracking-tight uppercase text-on-surface">
-                My{" "}
-                <span className="italic font-light text-primary">Calendar</span>
+                What I'm{" "}
+                <span className="italic font-light text-primary">Doing</span>
               </h2>
               <span className="h-[1px] bg-outline flex-grow mx-8 hidden md:block"></span>
             </div>

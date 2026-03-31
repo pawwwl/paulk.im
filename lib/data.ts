@@ -19,7 +19,7 @@ export const TIME_LINE = [
     name: "US Army",
     role: "Combat Medic",
     description:
-      "Dropped out of school to try something new - ended up biting more than I could chew. The military turned out to be some of the hardest but also rewarding years of my life.",
+      "Dropped out of school to try something new - bit off more than I could chew. Turned out to be some of the hardest but also rewarding years of my life.",
     date: "Feb 2013",
     dateTime: "2013-02",
   },
@@ -27,7 +27,7 @@ export const TIME_LINE = [
     name: "Catalyst Healthcare",
     role: "Frontend Developer",
     description:
-      "First job as a dev. Thrown into C# land, .NET, and Blazor. Worked on the web interface for the company's client-side inventory management system used by pharmacies and other healthcare providers. A tremendous period of growth, working with an amazing group of engineers.",
+      "First job as a dev - thrown into C# land, .NET, and Blazor. Worked on the web interface for the company's client-side inventory management system used by pharmacies and other healthcare providers. A tremendous period of growth working with an amazing group of engineers.",
     date: "Mar 2018",
     dateTime: "2018-03",
     tools: ["C#", ".NET", "Blazor", "SQL"],
