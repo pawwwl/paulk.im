@@ -113,9 +113,6 @@ export const ChatWidget = () => {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-on-surface-variant text-xs">
-              terminal
-            </span>
             <button
               onClick={() => setIsFullscreen((prev) => !prev)}
               className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
