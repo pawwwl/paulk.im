@@ -4,7 +4,7 @@ import isToday from "dayjs/plugin/isToday";
 import weekday from "dayjs/plugin/weekday";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import useSWR from "swr";
 
@@ -101,11 +101,19 @@ export function useCalendar() {
     setSelectedDate(dayjs());
   };
 
-  const getEventsForDate = (dateStr: string): CalendarEvent[] => {
-    return (SWR.data || [])?.filter(
-      (E) => dayjs(E._.start_time).tz(TZ).format("YYYY-MM-DD") === dateStr,
-    );
-  };
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    for (const event of SWR.data ?? []) {
+      const key = dayjs(event._.start_time).tz(TZ).format("YYYY-MM-DD");
+      const existing = map.get(key);
+      if (existing) existing.push(event);
+      else map.set(key, [event]);
+    }
+    return map;
+  }, [SWR.data]);
+
+  const getEventsForDate = (dateStr: string): CalendarEvent[] =>
+    eventsByDate.get(dateStr) ?? [];
 
   // Generate month grid (only weeks with at least one current-month day, Sun-start)
   const getMonthDays = (overrideDate?: Dayjs): CalendarDay[] => {

@@ -48,11 +48,11 @@ export default function RootLayout({
                   ABOUT
                 </button>
               </Link> */}
-              {/* <Link href="/showcase">
+              <Link href="/showcase">
                 <button className="bg-primary text-on-primary px-6 py-2 font-mono text-xs font-bold uppercase hover:bg-[#c3f5ff] transition-all duration-150 active:scale-95">
                   SHOW_CASE
                 </button>
-              </Link> */}
+              </Link>
             </div>
           </nav>
           {children}

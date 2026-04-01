@@ -174,50 +174,6 @@ const SCENE_KFS: SceneKF[] = [
   },
 ];
 
-// ── Fractal ridge via midpoint displacement (periodic, seamless) ─────────────
-// roughness: decay per octave — 0.50=smooth hills, 0.70=jagged peaks
-// nPts: number of control points — smaller = fewer, broader, more distinct peaks
-function makeJaggedRidgeFn(
-  seed: number,
-  minFrac: number,
-  maxFrac: number,
-  roughness = 0.62,
-  nPts = 512,
-  initialDisp = 0.88,
-) {
-  const rng = mkRng(seed);
-  const N = nPts; // must be power-of-2
-  const pts = new Float32Array(N + 1);
-  const range = maxFrac - minFrac;
-
-  // Both endpoints equal → seamless tile
-  const startY = minFrac + rng() * range;
-  pts[0] = startY;
-  pts[N] = startY;
-
-  let step = N;
-  let disp = range * initialDisp;
-  while (step > 1) {
-    const half = step >> 1;
-    for (let i = 0; i < N; i += step) {
-      const mid = (pts[i] + pts[i + step]) * 0.5;
-      pts[i + half] = mid + (rng() - 0.5) * disp;
-    }
-    step = half;
-    disp *= roughness;
-  }
-
-  for (let i = 0; i <= N; i++)
-    pts[i] = Math.max(minFrac, Math.min(maxFrac, pts[i]));
-
-  return (lx: number) => {
-    const t = ((((lx / TILE) % 1) + 1) % 1) * N;
-    const i = Math.floor(t);
-    const f = t - i;
-    return pts[i] * (1 - f) + pts[(i + 1) % N] * f;
-  };
-}
-
 // ── Building types ────────────────────────────────────────────────────────────
 interface WinState {
   lit: boolean;
@@ -232,6 +188,7 @@ interface Building {
   wins: WinState[];
   antennaH: number;
   outline: string;
+  dayFill: C3;
 }
 
 function makeBuildings(
@@ -265,6 +222,18 @@ function makeBuildings(
           : outlinePick > 0.25
             ? `rgba(0,140,70,${(0.12 + rng() * 0.2).toFixed(2)})`
             : `rgba(0,80,35,${(0.1 + rng() * 0.15).toFixed(2)})`;
+    // Daytime building colors: concrete, sandstone, brick, steel, terracotta
+    const DAY_PALETTES: C3[] = [
+      [108, 104, 98],  // concrete grey
+      [118, 110, 92],  // sandstone
+      [102, 78, 64],   // warm brick
+      [90, 96, 102],   // steel blue-grey
+      [114, 92, 76],   // terracotta
+      [98, 104, 94],   // sage grey
+      [122, 112, 100], // warm limestone
+      [84, 90, 96],    // slate
+    ];
+    const dayFill = DAY_PALETTES[Math.floor(rng() * DAY_PALETTES.length)];
     arr.push({
       x,
       w,
@@ -274,6 +243,7 @@ function makeBuildings(
       wins,
       antennaH: rng() > 0.55 ? 8 + rng() * 22 : 0,
       outline,
+      dayFill,
     });
     x += w + minGap + rng() * (maxGap - minGap);
   }
@@ -385,14 +355,13 @@ const MTNS_NEAR = makeMountainLayer(
   0.0,
   0.0,
 );
-// Continuous rolling foothills (fractal ridge is fine for rounded hills)
-const RIDGE_HILLS = makeJaggedRidgeFn(44, 0.5, 0.68, 0.66, 128, 0.75);
 const STARS = makeStars(70);
 
+
 // Building factories (called per mount so window state is per-instance)
-const mkSkysc = () => makeBuildings(33, 11, 28, 68, 120, 0, 5);
-const mkMidR = () => makeBuildings(44, 14, 35, 38, 70, 1, 6);
-const mkApts = () => makeBuildings(55, 42, 85, 20, 40, 2, 12);
+const mkSkysc = () => makeBuildings(33, 11, 28, 68, 120, 0, 2);
+const mkMidR = () => makeBuildings(44, 14, 35, 38, 70, 0, 2);
+const mkApts = () => makeBuildings(55, 42, 85, 20, 40, 0, 3);
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function LocationCard() {
@@ -461,39 +430,6 @@ export function LocationCard() {
     resize();
 
     // ── Helpers ──────────────────────────────────────────────────────────────
-    function drawRidge(
-      fn: (x: number) => number,
-      scrollX: number,
-      color: string,
-    ) {
-      ctx!.beginPath();
-      ctx!.moveTo(0, H);
-      for (let sx = 0; sx <= W; sx += 2) {
-        const lx = (((sx + scrollX) % TILE) + TILE) % TILE;
-        ctx!.lineTo(sx, fn(lx) * H);
-      }
-      ctx!.lineTo(W, H);
-      ctx!.closePath();
-      ctx!.fillStyle = color;
-      ctx!.fill();
-    }
-
-    function drawRidgeLine(
-      fn: (x: number) => number,
-      scrollX: number,
-      color: string,
-      lineWidth = 0.75,
-    ) {
-      ctx!.beginPath();
-      for (let sx = 0; sx <= W; sx += 2) {
-        const lx = (((sx + scrollX) % TILE) + TILE) % TILE;
-        sx === 0 ? ctx!.moveTo(sx, fn(lx) * H) : ctx!.lineTo(sx, fn(lx) * H);
-      }
-      ctx!.strokeStyle = color;
-      ctx!.lineWidth = lineWidth;
-      ctx!.stroke();
-    }
-
     function drawMountainLayer(
       mountains: Mountain[],
       scrollX: number,
@@ -557,24 +493,36 @@ export function LocationCard() {
     function drawBuildings(
       buildings: Building[],
       scrollX: number,
-      fill: string,
+      nightFill: C3,
       winCol: string,
+      dayWinCol?: string,
+      dayFrac = 0,
     ) {
       for (const b of buildings) {
         for (let copy = 0; copy < 2; copy++) {
           const sx = b.x - scrollX + copy * TILE;
           if (sx + b.w < 0 || sx > W) continue;
           const top = H - b.h;
-          // Body
-          ctx!.fillStyle = fill;
+          // Body — blend night fill → per-building day color
+          const bc = lerpC3(nightFill, b.dayFill, dayFrac);
+          ctx!.fillStyle = `rgb(${bc[0] | 0},${bc[1] | 0},${bc[2] | 0})`;
           ctx!.fillRect(sx, top, b.w, b.h);
+          // Daytime shadow: dark gradient on right ~40% of face
+          if (dayFrac > 0.01) {
+            const shadeA = dayFrac * 0.45;
+            const sg = ctx!.createLinearGradient(sx + b.w * 0.55, 0, sx + b.w, 0);
+            sg.addColorStop(0, `rgba(0,0,0,0)`);
+            sg.addColorStop(1, `rgba(0,0,0,${shadeA.toFixed(2)})`);
+            ctx!.fillStyle = sg;
+            ctx!.fillRect(sx, top, b.w, b.h);
+          }
           // Outline
           ctx!.strokeStyle = b.outline;
           ctx!.lineWidth = 0.75;
           ctx!.strokeRect(sx + 0.375, top + 0.375, b.w - 0.75, b.h - 0.75);
           // Antenna
           if (b.antennaH > 0) {
-            ctx!.fillStyle = fill;
+            ctx!.fillStyle = `rgb(${bc[0] | 0},${bc[1] | 0},${bc[2] | 0})`;
             ctx!.fillRect(sx + b.w / 2 - 1, top - b.antennaH, 2, b.antennaH);
             ctx!.strokeStyle = b.outline;
             ctx!.strokeRect(
@@ -587,11 +535,20 @@ export function LocationCard() {
           // Windows
           const csp = (b.w - 6) / b.cols;
           const rsp = (b.h - 8) / b.rows;
-          ctx!.fillStyle = winCol;
           for (let r = 0; r < b.rows; r++) {
             for (let c = 0; c < b.cols; c++) {
-              if (!b.wins[r * b.cols + c].lit) continue;
-              ctx!.fillRect(sx + 3 + c * csp, top + 5 + r * rsp, 4, 5);
+              const wx = sx + 3 + c * csp;
+              const wy = top + 5 + r * rsp;
+              // Daytime: all windows show as reflective glass
+              if (dayWinCol) {
+                ctx!.fillStyle = dayWinCol;
+                ctx!.fillRect(wx, wy, 4, 5);
+              }
+              // Night: only lit windows glow
+              if (b.wins[r * b.cols + c].lit) {
+                ctx!.fillStyle = winCol;
+                ctx!.fillRect(wx, wy, 4, 5);
+              }
             }
           }
         }
@@ -645,18 +602,10 @@ export function LocationCard() {
       const skyBot = lerpC3(k0.sB, k1.sB, kt);
       const starAlpha = lerp(k0.sa, k1.sa, kt);
       const litFrac = lerp(k0.lf, k1.lf, kt);
-      const mtnFarC = rgbaC3(
-        lerpC3(k0.mF, k1.mF, kt),
-        lerp(k0.mFa, k1.mFa, kt),
-      );
-      const mtnMidC = rgbaC3(
-        lerpC3(k0.mM, k1.mM, kt),
-        lerp(k0.mMa, k1.mMa, kt),
-      );
-      const mtnNearC = rgbaC3(
-        lerpC3(k0.mN, k1.mN, kt),
-        lerp(k0.mNa, k1.mNa, kt),
-      );
+      const dayFrac = 1 - litFrac;
+      const mtnFarC = rgbaC3(lerpC3(k0.mF, k1.mF, kt), 1);
+      const mtnMidC = rgbaC3(lerpC3(k0.mM, k1.mM, kt), 1);
+      const mtnNearC = rgbaC3(lerpC3(k0.mN, k1.mN, kt), 1);
 
       // Sun: rises east (left) ~6am, arcs overhead, sets west (right) ~8pm
       const sunOpacity = Math.max(
@@ -817,46 +766,43 @@ export function LocationCard() {
       const s3 = (scroll * 0.22) % TILE;
       drawMountainLayer(MTNS_NEAR, s3, mtnNearC, "rgba(50,90,150,0.07)");
 
-      const s4 = (scroll * 0.35) % TILE;
-      const hillsC = rgbaC3(
-        lerpC3(k0.mN, k1.mN, kt),
-        Math.min(1, lerp(k0.mNa, k1.mNa, kt) + 0.06),
-      );
-      drawRidge(RIDGE_HILLS, s4, hillsC);
-      drawRidgeLine(RIDGE_HILLS, s4, "rgba(30,70,140,0.15)");
 
       // ── Buildings (lights dim during the day) ─────────────────────────────
-      const bldFill = `rgb(${lerp(42, 3, litFrac) | 0},${lerp(46, 8, litFrac) | 0},${lerp(53, 16, litFrac) | 0})`;
+      const nightFill: C3 = [lerp(42, 3, litFrac), lerp(46, 8, litFrac), lerp(53, 16, litFrac)];
+      const dayWinAlpha = dayFrac * 0.28;
+      const dayWinCol =
+        dayWinAlpha > 0.01
+          ? `rgba(160,205,235,${dayWinAlpha.toFixed(2)})`
+          : undefined;
       const scScroll = (scroll * 0.5) % TILE;
       drawBuildings(
         sc,
         scScroll,
-        bldFill,
+        nightFill,
         `rgba(255,155,50,${(litFrac * 0.72).toFixed(2)})`,
+        dayWinCol,
+        dayFrac,
       );
       const mrScroll = (scroll * 0.72) % TILE;
       drawBuildings(
         mr,
         mrScroll,
-        bldFill,
+        nightFill,
         `rgba(255,140,42,${(litFrac * 0.58).toFixed(2)})`,
+        dayWinCol,
+        dayFrac,
       );
       const apScroll = (scroll * 1.0) % TILE;
       drawBuildings(
         ap,
         apScroll,
-        bldFill,
+        nightFill,
         `rgba(255,125,38,${(litFrac * 0.5).toFixed(2)})`,
+        dayWinCol,
+        dayFrac,
       );
 
-      // ── Ground haze ────────────────────────────────────────────────────────
-      const hazeC = lerpC3(k0.sB, k1.sB, kt);
-      const haze = ctx!.createLinearGradient(0, H * 0.8, 0, H);
-      haze.addColorStop(0, "rgba(0,0,0,0)");
-      haze.addColorStop(0.5, rgbaC3(hazeC, 0.55));
-      haze.addColorStop(1, rgbaC3(hazeC, 0.92));
-      ctx!.fillStyle = haze;
-      ctx!.fillRect(0, H * 0.8, W, H * 0.2);
+
     }
 
     animId = requestAnimationFrame(frame);

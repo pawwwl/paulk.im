@@ -1,7 +1,8 @@
 import { ThreeSceneLoader } from "./three-loader";
 import { CyberpunkTerminalLoader } from "./cyberpunk-terminal-loader";
-import { CalvinHobbesLoader } from "./calvin-hobbes-loader";
+import { AsciiVideoLoader } from "./ascii-video-loader";
 import { LazySection } from "@/components/lazy-section";
+import { AirHockey } from "@/components/air-hockey";
 
 export default () => {
   return (
@@ -17,44 +18,38 @@ export default () => {
             <span className="h-[1px] bg-outline flex-grow mx-8 hidden md:block"></span>
           </div>
 
-          <LazySection>
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
-                  system.run("helix_in_space")
-                </span>
-              </div>
-
-              <ThreeSceneLoader />
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 mb-4">
+              <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
+              <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
+                system.run("helix_in_space")
+              </span>
             </div>
-          </LazySection>
 
-          <LazySection>
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
-                  system.run("cyberpunk_terminal")
-                </span>
-              </div>
+            <ThreeSceneLoader />
+          </div>
 
-              <CyberpunkTerminalLoader />
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 mb-4">
+              <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
+              <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
+                system.run('geometric_fractals')
+              </span>
             </div>
-          </LazySection>
 
-          <LazySection>
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-                <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
-                  system.run('calvin_and_hobbes')
-                </span>
-              </div>
+            <AsciiVideoLoader />
+          </div>
 
-              <CalvinHobbesLoader />
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 mb-4">
+              <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
+              <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
+                system.run("air_hockey")
+              </span>
             </div>
-          </LazySection>
+
+            <AirHockey />
+          </div>
         </section>
       </main>
       {/* <!-- Footer from Components_8 --> */}

@@ -59,8 +59,7 @@ import {
   CalendarDay,
   CalendarEvent,
 } from "./calendar.hooks";
-import { Fragment, useEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import dayjs, { Dayjs } from "dayjs";
 export const Calendar = () => {
@@ -98,19 +97,14 @@ export const Calendar = () => {
     goToNextRef.current = goToNext;
   });
 
-  // On settle: step the month by the diff from center, then snap back
+  // On settle: update state only — the layout effect below handles the snap
   useEffect(() => {
     if (!emblaApi) return;
     const onSettle = () => {
       const diff = emblaApi.selectedScrollSnap() - CENTER;
       if (diff !== 0) {
-        const scrollY = window.scrollY;
-        flushSync(() => {
-          if (diff < 0) for (let i = 0; i < -diff; i++) goToPrevRef.current();
-          else for (let i = 0; i < diff; i++) goToNextRef.current();
-        });
-        window.scrollTo(0, scrollY);
-        emblaApi.scrollTo(CENTER, true);
+        if (diff < 0) for (let i = 0; i < -diff; i++) goToPrevRef.current();
+        else for (let i = 0; i < diff; i++) goToNextRef.current();
       }
     };
     emblaApi.on("settle", onSettle);
@@ -119,11 +113,16 @@ export const Calendar = () => {
     };
   }, [emblaApi]);
 
-  // Return to center when date or view changes (Today button, view switch)
-  useEffect(() => {
+  // reInit only when view changes (slide dimensions change month↔week)
+  useLayoutEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.reInit();
+  }, [emblaApi, view]);
+
+  // Snap back to center after DOM update, before paint — prevents flicker
+  useLayoutEffect(() => {
     if (!emblaApi) return;
     const scrollY = window.scrollY;
-    emblaApi.reInit();
     emblaApi.scrollTo(CENTER, true);
     window.scrollTo(0, scrollY);
   }, [emblaApi, currentDate, view]);

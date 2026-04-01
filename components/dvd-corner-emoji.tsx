@@ -7,12 +7,26 @@ const HIT_DIST = 5;
 
 const SAD_EMOJIS = ["😢", "😠", "😤", "😵", "🤬", "😖", "😣", "😩"];
 const HAPPY_EMOJIS = ["😄", "🥳", "😂", "🎉", "😎", "🤩", "😇", "🙌"];
-const CONFETTI_COLORS = ["#00E5FF", "#FF4081", "#69FF47", "#FFD600", "#E040FB", "#FF6D00"];
+const CONFETTI_COLORS = [
+  "#00E5FF",
+  "#FF4081",
+  "#69FF47",
+  "#FFD600",
+  "#E040FB",
+  "#FF6D00",
+];
 
 type Particle = {
-  x: number; y: number; vx: number; vy: number;
-  color: string; size: number; life: number; maxLife: number;
-  rot: number; rotV: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  color: string;
+  size: number;
+  life: number;
+  maxLife: number;
+  rot: number;
+  rotV: number;
 };
 type Point = { x: number; y: number };
 
@@ -21,11 +35,15 @@ function randomFrom<T>(arr: T[]): T {
 }
 
 function closestPtOnSeg(
-  px: number, py: number,
-  ax: number, ay: number,
-  bx: number, by: number,
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
 ) {
-  const dx = bx - ax, dy = by - ay;
+  const dx = bx - ax,
+    dy = by - ay;
   const lenSq = dx * dx + dy * dy;
   if (lenSq < 0.001) return { x: ax, y: ay };
   const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
@@ -44,7 +62,8 @@ function redrawStrokes(canvas: HTMLCanvasElement, strokes: Point[][]) {
     if (stroke.length < 2) continue;
     ctx.beginPath();
     ctx.moveTo(stroke[0].x, stroke[0].y);
-    for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
+    for (let i = 1; i < stroke.length; i++)
+      ctx.lineTo(stroke[i].x, stroke[i].y);
     ctx.stroke();
   }
 }
@@ -89,7 +108,8 @@ export function DvdCornerEmoji() {
         const angle = Math.random() * Math.PI * 2;
         const speed = 1.5 + Math.random() * 3.5;
         particlesRef.current.push({
-          x: cx, y: cy,
+          x: cx,
+          y: cy,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed - 2,
           color: randomFrom(CONFETTI_COLORS),
@@ -119,12 +139,27 @@ export function DvdCornerEmoji() {
       p.x += p.vx;
       p.y += p.vy;
 
-      let hitX = false, hitY = false;
+      let hitX = false,
+        hitY = false;
 
-      if (p.x <= 0) { p.x = 0; p.vx = Math.abs(p.vx); hitX = true; }
-      else if (p.x + LOGO_SIZE >= W) { p.x = W - LOGO_SIZE; p.vx = -Math.abs(p.vx); hitX = true; }
-      if (p.y <= 0) { p.y = 0; p.vy = Math.abs(p.vy); hitY = true; }
-      else if (p.y + LOGO_SIZE >= H) { p.y = H - LOGO_SIZE; p.vy = -Math.abs(p.vy); hitY = true; }
+      if (p.x <= 0) {
+        p.x = 0;
+        p.vx = Math.abs(p.vx);
+        hitX = true;
+      } else if (p.x + LOGO_SIZE >= W) {
+        p.x = W - LOGO_SIZE;
+        p.vx = -Math.abs(p.vx);
+        hitX = true;
+      }
+      if (p.y <= 0) {
+        p.y = 0;
+        p.vy = Math.abs(p.vy);
+        hitY = true;
+      } else if (p.y + LOGO_SIZE >= H) {
+        p.y = H - LOGO_SIZE;
+        p.vy = -Math.abs(p.vy);
+        hitY = true;
+      }
 
       if (hitX || hitY) {
         if (hitX && hitY) {
@@ -137,9 +172,9 @@ export function DvdCornerEmoji() {
 
       // Stroke collision
       const corners = [
-        { x: p.x,             y: p.y },
+        { x: p.x, y: p.y },
         { x: p.x + LOGO_SIZE, y: p.y },
-        { x: p.x,             y: p.y + LOGO_SIZE },
+        { x: p.x, y: p.y + LOGO_SIZE },
         { x: p.x + LOGO_SIZE, y: p.y + LOGO_SIZE },
       ];
 
@@ -147,14 +182,24 @@ export function DvdCornerEmoji() {
       outer: for (let s = 0; s < strokesRef.current.length; s++) {
         const stroke = strokesRef.current[s];
         for (let i = 0; i < stroke.length - 1; i++) {
-          const a = stroke[i], b = stroke[i + 1];
-          const sdx = b.x - a.x, sdy = b.y - a.y;
+          const a = stroke[i],
+            b = stroke[i + 1];
+          const sdx = b.x - a.x,
+            sdy = b.y - a.y;
           const sLen = Math.hypot(sdx, sdy);
           if (sLen < 1) continue;
-          const nx = -sdy / sLen, ny = sdx / sLen;
+          const nx = -sdy / sLen,
+            ny = sdx / sLen;
 
           for (const corner of corners) {
-            const closest = closestPtOnSeg(corner.x, corner.y, a.x, a.y, b.x, b.y);
+            const closest = closestPtOnSeg(
+              corner.x,
+              corner.y,
+              a.x,
+              a.y,
+              b.x,
+              b.y,
+            );
             const dist = Math.hypot(corner.x - closest.x, corner.y - closest.y);
             if (dist < HIT_DIST) {
               const dot = p.vx * nx + p.vy * ny;
@@ -170,7 +215,9 @@ export function DvdCornerEmoji() {
       }
 
       if (hitStrokeIdx !== -1) {
-        strokesRef.current = strokesRef.current.filter((_, i) => i !== hitStrokeIdx);
+        strokesRef.current = strokesRef.current.filter(
+          (_, i) => i !== hitStrokeIdx,
+        );
         const dc = drawCanvasRef.current;
         if (dc) redrawStrokes(dc, strokesRef.current);
         setColor(randomFrom(CONFETTI_COLORS));
@@ -181,10 +228,12 @@ export function DvdCornerEmoji() {
 
       // Draw confetti
       ctx.clearRect(0, 0, W, H);
-      particlesRef.current = particlesRef.current.filter(pt => pt.life > 0);
+      particlesRef.current = particlesRef.current.filter((pt) => pt.life > 0);
       for (const pt of particlesRef.current) {
-        pt.x += pt.vx; pt.y += pt.vy;
-        pt.vy += 0.12; pt.vx *= 0.99;
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.vy += 0.12;
+        pt.vx *= 0.99;
         pt.rot += pt.rotV;
         pt.life -= 1 / pt.maxLife;
         ctx.save();
@@ -200,13 +249,19 @@ export function DvdCornerEmoji() {
     };
 
     animRef.current = requestAnimationFrame(loop);
-    return () => { cancelAnimationFrame(animRef.current); ro.disconnect(); };
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      ro.disconnect();
+    };
   }, []);
 
   const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {
     const rect = containerRef.current!.getBoundingClientRect();
     if ("touches" in e) {
-      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top,
+      };
     }
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
@@ -248,13 +303,16 @@ export function DvdCornerEmoji() {
   const clearDrawing = () => {
     strokesRef.current = [];
     const drawCanvas = drawCanvasRef.current;
-    if (drawCanvas) drawCanvas.getContext("2d")?.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    if (drawCanvas)
+      drawCanvas
+        .getContext("2d")
+        ?.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   };
 
   return (
     <div
       ref={containerRef}
-onMouseDown={handlePointerDown}
+      onMouseDown={handlePointerDown}
       onMouseMove={handlePointerMove}
       onMouseUp={handlePointerUp}
       onMouseLeave={handlePointerUp}
@@ -262,21 +320,38 @@ onMouseDown={handlePointerDown}
       onTouchMove={handlePointerMove}
       onTouchEnd={handlePointerUp}
       className="relative bg-surface-container border border-outline overflow-hidden min-h-[250px] select-none cursor-crosshair"
+      style={{ backgroundColor: "oklch(0.18 0.02 260)" }}
     >
+      {/* background label */}
+      <span className="absolute inset-0 flex items-center justify-center text-2xl font-bold tracking-widest uppercase pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.08)" }}>
+        Draw me
+      </span>
+
       {/* persistent stroke layer */}
-      <canvas ref={drawCanvasRef} className="absolute inset-0 pointer-events-none" />
+      <canvas
+        ref={drawCanvasRef}
+        className="absolute inset-0 pointer-events-none"
+      />
 
       {/* confetti layer */}
-      <canvas ref={confettiCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+      <canvas
+        ref={confettiCanvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none"
+      />
 
       {/* bouncing emoji box */}
       <div
         className="absolute pointer-events-none flex items-center justify-center"
-        style={{ left: pos.x, top: pos.y, width: LOGO_SIZE, height: LOGO_SIZE, backgroundColor: color }}
+        style={{
+          left: pos.x,
+          top: pos.y,
+          width: LOGO_SIZE,
+          height: LOGO_SIZE,
+          backgroundColor: color,
+        }}
       >
         <span style={{ fontSize: 40, lineHeight: 1 }}>{emoji}</span>
       </div>
-
     </div>
   );
 }
