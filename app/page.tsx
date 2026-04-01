@@ -101,7 +101,7 @@ export default function Home() {
                 <p className="mt-0.5 text-sm italic font-medium text-accent-pink uppercase tracking-widest">
                   {item.role}
                 </p>
-                <p className="mt-2 text-base/7 text-on-surface-variant font-mono">
+                <p className="mt-2 text-sm/6 text-on-surface-variant font-mono">
                   {item.description}
                 </p>
                 {item.tools && (

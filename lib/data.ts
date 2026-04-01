@@ -45,7 +45,7 @@ export const TIME_LINE = [
     name: "Audubon Companies",
     role: "Software Engineer",
     description:
-      "Current role, small team - big company with abundant opportunities to spread my wings. First project - Tech Lead for a v2 rewrite of inventory and report management app suite for pipeline inspections. Most difficult component integrating an offline-first mobile app in React Native. Next project - currently working on building an in-house solution for employee performance and talent assessment. First time implementing event-sourcing architecture ",
+      "Current role with a small team but big company. First project - Tech Lead for a v2 rewrite of an inventory and report management app supporting pipeline inspectors. Most difficult component was integrating an offline-first mobile app in React Native used by field technicians. Next project - currently working on building an in-house solution for employee performance and talent assessment tracking. First time implementing event-sourcing architecture ",
     date: "Sep 2022",
     dateTime: "2022-09",
     tools: ["Next.js", "Mongo", "SQL Server", "Azure", "React Native"],
