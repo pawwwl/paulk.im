@@ -33,7 +33,7 @@ export default () => {
             <div className="inline-flex items-center gap-2 mb-4">
               <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
               <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
-                system.run('ascii_video')
+                system.run('ascii_camera')
               </span>
             </div>
 

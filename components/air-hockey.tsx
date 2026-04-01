@@ -61,6 +61,17 @@ export function AirHockey() {
       return py;
     };
 
+    const updateLabel = () => {
+      if (labelRef.current) {
+        labelRef.current.textContent =
+          state.controlled === "p1"
+            ? "P1_HUMAN"
+            : state.controlled === "p2"
+              ? "P2_HUMAN"
+              : "BOT_VS_BOT";
+      }
+    };
+
     const onMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       state.mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -75,18 +86,35 @@ export function AirHockey() {
       } else {
         state.controlled = state.controlled === "p2" ? null : "p2";
       }
-      if (labelRef.current) {
-        labelRef.current.textContent =
-          state.controlled === "p1"
-            ? "P1_HUMAN"
-            : state.controlled === "p2"
-              ? "P2_HUMAN"
-              : "BOT_VS_BOT";
+      updateLabel();
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      state.mouseY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+      state.mouseY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+      const W = canvas.width;
+      if (x < W / 2) {
+        state.controlled = state.controlled === "p1" ? null : "p1";
+      } else {
+        state.controlled = state.controlled === "p2" ? null : "p2";
       }
+      updateLabel();
     };
 
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("click", onClick);
+    canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
 
     const loop = () => {
       const ctx = canvas.getContext("2d");
@@ -198,7 +226,7 @@ export function AirHockey() {
         ctx.font = "bold 11px monospace";
         ctx.textAlign = "center";
         ctx.fillStyle = `rgba(200,220,230,${pulse * 0.7})`;
-        ctx.fillText("CLICK A SIDE TO PLAY", W / 2, H - 12);
+        ctx.fillText("TAP/CLICK A SIDE TO PLAY", W / 2, H - 12);
       }
 
       state.animId = requestAnimationFrame(loop);
@@ -334,6 +362,8 @@ export function AirHockey() {
       cancelAnimationFrame(state.animId);
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("click", onClick);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchstart", onTouchStart);
       ro.disconnect();
     };
   }, []);
