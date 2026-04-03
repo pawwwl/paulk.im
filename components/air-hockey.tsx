@@ -504,7 +504,7 @@ export function AirHockey() {
       </button>
       <div
         ref={containerRef}
-        className="bg-surface-container border border-outline relative overflow-hidden min-h-[250px]"
+        className="bg-surface-container border border-outline relative overflow-hidden min-h-[400px]"
       >
         <div className="absolute top-2 left-3 z-10 pointer-events-none">
           <p

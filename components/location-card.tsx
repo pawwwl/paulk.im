@@ -371,6 +371,9 @@ export function LocationCard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scrollRef = useRef(0);
   const tRef = useRef(0);
+  const startHrRef = useRef(
+    new Date().getHours() + new Date().getMinutes() / 60,
+  );
 
   // Mutable per-mount building state (window flicker)
   const bRef = useRef<{
@@ -551,6 +554,41 @@ export function LocationCard() {
               }
             }
           }
+          // Snow on rooftop — lumpy cap with icicle drips
+          const snowH = Math.max(2, b.w * 0.045);
+          const sg = ctx!.createLinearGradient(0, top - snowH, 0, top + snowH * 0.6);
+          sg.addColorStop(0, "rgba(230,242,255,0.97)");
+          sg.addColorStop(1, "rgba(200,225,248,0.0)");
+          ctx!.fillStyle = sg;
+          ctx!.beginPath();
+          // Slightly bumpy roofline using seeded offsets derived from building x
+          const bumpCount = Math.ceil(b.w / 7);
+          ctx!.moveTo(sx, top + snowH * 0.4);
+          for (let i = 0; i <= bumpCount; i++) {
+            const bx = sx + (i / bumpCount) * b.w;
+            const bumpSeed = Math.sin(b.x * 0.37 + i * 1.9) * 0.5 + 0.5;
+            const by = top - snowH * (0.5 + bumpSeed * 0.6);
+            ctx!.lineTo(bx, by);
+          }
+          ctx!.lineTo(sx + b.w, top + snowH * 0.4);
+          ctx!.closePath();
+          ctx!.fill();
+          // Icicle drips along roofline
+          const icicleCount = Math.floor(b.w / 9);
+          for (let i = 0; i < icicleCount; i++) {
+            const ix = sx + 4 + i * (b.w - 8) / Math.max(1, icicleCount - 1);
+            const iLen = snowH * (0.7 + Math.sin(b.x * 0.53 + i * 2.3) * 0.3);
+            const ig = ctx!.createLinearGradient(0, top, 0, top + iLen);
+            ig.addColorStop(0, "rgba(210,235,255,0.85)");
+            ig.addColorStop(1, "rgba(190,220,250,0.0)");
+            ctx!.fillStyle = ig;
+            ctx!.beginPath();
+            ctx!.moveTo(ix - 1.5, top);
+            ctx!.lineTo(ix, top + iLen);
+            ctx!.lineTo(ix + 1.5, top);
+            ctx!.closePath();
+            ctx!.fill();
+          }
         }
       }
     }
@@ -587,7 +625,9 @@ export function LocationCard() {
       }
 
       // ── Time-of-day scene params ──────────────────────────────────────────
-      const hr = new Date().getHours() + new Date().getMinutes() / 60;
+      // Start at real local time, fast-forward through 24h every 15 seconds
+      const hr =
+        (startHrRef.current + (tRef.current / 30000) * 24) % 24;
       let k0 = SCENE_KFS[0],
         k1 = SCENE_KFS[1];
       for (let i = 0; i < SCENE_KFS.length - 1; i++) {

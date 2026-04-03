@@ -6,6 +6,7 @@ import { TronGame } from "@/components/tron-game";
 import { LocationCard } from "@/components/location-card";
 import { SKILLS, TIME_LINE } from "@/lib/data";
 import Image from "next/image";
+import { ProfileWave } from "@/components/profile-wave";
 
 export default function Home() {
   return (
@@ -33,15 +34,16 @@ export default function Home() {
         {/* <!-- Bio & Technical Stack: Asymmetric Layout --> */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-20">
           <div className="lg:col-span-5 relative">
-            <div className="aspect-[4/5] rounded-none border border-outline overflow-hidden shadow-[0_0_50px_rgba(0,229,255,0.05)] relative z-10 group">
+            <div className="group aspect-4/5 rounded-none border border-outline overflow-hidden shadow-[0_0_50px_rgba(0,229,255,0.05)] relative z-10">
               <Image
                 loading="eager"
-                alt="Portrait of a developer"
+                alt="Profile picture"
                 fill
                 className="w-full h-full object-cover transition-all duration-700"
                 src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/profile.png"
               />
-              <div className="absolute inset-0 bg-primary/10 mix-blend-overlay"></div>
+              <div className="absolute inset-0 bg-primary/10 mix-blend-overlay" />
+              <ProfileWave />
             </div>
             {/* <!-- Quirky Accent --> */}
             <div className="absolute -bottom-10 right-5 w-48 h-48 bg-surface-container border border-primary/30 flex items-center justify-center p-8 z-20 -rotate-6 shadow-2xl">

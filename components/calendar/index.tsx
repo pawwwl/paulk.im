@@ -179,6 +179,8 @@ export const Calendar = () => {
                     days={getMonthDays(currentDate.add(offset, "month"))}
                     onSelectDate={handleSelectDate}
                     selectedDate={selectedDate}
+                    isActive={offset === 0}
+                    monthKey={currentDate.add(offset, "month").format("YYYY-MM")}
                   />
                 )}
                 {view === "week" && (
@@ -370,6 +372,8 @@ type Props = {
   days: CalendarDay[];
   onSelectDate: (date: string) => void;
   selectedDate: Dayjs | null;
+  isActive?: boolean;
+  monthKey?: string;
 };
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -539,16 +543,26 @@ function EventListItem({ event }: { event: CalendarEvent }) {
   );
 }
 
-export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => {
+export const CalendarMonth = ({ days, onSelectDate, selectedDate, isActive = false, monthKey }: Props) => {
   const eventsForPanel =
     selectedDate === null
       ? days.filter((d) => d.isCurrentMonth).flatMap((d) => d.events)
       : (days.find((d) => d.isSelected)?.events ?? []);
 
+  const [animated, setAnimated] = useState(false);
+
+  useEffect(() => {
+    if (!isActive) {
+      setAnimated(false);
+      return;
+    }
+    setAnimated(true);
+  }, [isActive, monthKey]);
+
   return (
     <div className="lg:flex lg:h-full">
       {/* Calendar grid */}
-      <div className="shadow-sm ring-1 ring-black/5 lg:flex lg:flex-auto lg:flex-col dark:ring-white/5">
+      <div className="cal-border-glow shadow-sm ring-1 ring-black/5 lg:flex lg:flex-auto lg:flex-col dark:ring-white/5">
         {/* Day of week headers */}
         <div className="grid grid-cols-7 gap-px border-b border-gray-300 bg-gray-200 text-center text-xs/6 font-semibold text-gray-700 lg:flex-none dark:border-white/5 dark:bg-white/15 dark:text-primary">
           {DOW.map((d) => (
@@ -565,17 +579,25 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => {
         {/* Month grid */}
         <div className="bg-gray-200 text-xs/6 text-gray-700 lg:flex-auto dark:bg-white/10 dark:text-on-surface-variant">
           <div className="grid grid-cols-7 gap-px">
-            {days.map((day) => (
+            {days.map((day, index) => {
+              const col = index % 7;
+              const row = Math.floor(index / 7);
+              const delay = 180 + col * 38 + row * 62;
+              return (
               <button
                 key={day.date}
                 type="button"
                 onClick={() => onSelectDate(day.date)}
+                style={animated ? {
+                  animation: `cal-cell-in 420ms cubic-bezier(0.34,1.56,0.64,1) ${delay}ms both`,
+                } : { opacity: 0 }}
                 className={`group relative flex flex-col px-3 py-2 focus:z-10 min-h-14 lg:min-h-20 hover:bg-gray-50 dark:hover:bg-white/5 ${
                   day.isCurrentMonth
                     ? "bg-white dark:bg-surface"
                     : "bg-gray-50 text-gray-500 dark:bg-surface/50 dark:text-on-surface-variant"
                 } ${day.isSelected ? "font-semibold" : ""}`}
               >
+
                 <time
                   dateTime={day.date}
                   className={`ml-auto flex size-6 items-center justify-center rounded-full text-sm ${(() => {
@@ -619,7 +641,8 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate }: Props) => {
                   </span>
                 )}
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
 
