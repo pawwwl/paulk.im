@@ -19,15 +19,15 @@ function splitDate(d: string) {
 // ── Component ─────────────────────────────────────────────────────────────────
 export function TimelineSection() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const rowRefs      = useRef<(HTMLDivElement | null)[]>(Array(N).fill(null));
+  const rowRefs      = useRef<(HTMLDivElement | null)[]>(Array(N + 1).fill(null));
   const drawnRef     = useRef(0);
-  const npRef        = useRef<number[]>(Array(N).fill(0));
+  const npRef        = useRef<number[]>(Array(N + 1).fill(0));
 
   const [svgW,         setSvgW]         = useState(0);
   const [svgH,         setSvgH]         = useState(0);
   const [nodeYs,       setNodeYs]       = useState<number[]>([]);
   const [drawn,        setDrawn]        = useState(0);
-  const [nodeProgress, setNodeProgress] = useState<number[]>(Array(N).fill(0));
+  const [nodeProgress, setNodeProgress] = useState<number[]>(Array(N + 1).fill(0));
 
   // ── Measure ──
   const measure = useCallback(() => {
@@ -55,7 +55,7 @@ export function TimelineSection() {
   useEffect(() => {
     if (!nodeYs.length) return;
     const y0    = nodeYs[0];
-    const yLast = nodeYs[N - 1];
+    const yLast = nodeYs[N];
     const tLen  = (yLast - y0) || 1;
     let rafId: number;
 
@@ -91,12 +91,10 @@ export function TimelineSection() {
   // ── Derived geometry ──
   const cx     = svgW / 2;
   const y0     = nodeYs[0] ?? 0;
-  const yLast  = nodeYs[N - 1] ?? svgH;
-  const tLen   = Math.max(0, yLast - y0);
-  const dashOff = tLen ? Math.max(0, tLen - drawn) : 9999;
+  const yLast  = nodeYs[N] ?? svgH;
 
   return (
-    <div className="mx-auto my-60 max-w-2xl px-6 lg:px-8">
+    <div className="mx-auto my-50 max-w-2xl px-6 lg:px-8">
       <div ref={containerRef} className="relative">
 
         {/* ── SVG layer ──────────────────────────────────────────────────── */}
@@ -116,19 +114,44 @@ export function TimelineSection() {
                   <feMergeNode in="SourceGraphic" />
                 </feMerge>
               </filter>
+              {/* Per-segment gradients: each transitions from node i color to node i+1 color,
+                  with the midpoint between nodes as the 50% blend point */}
+              {nodeYs.slice(0, -1).map((ny, i) => (
+                <linearGradient
+                  key={`seg-grad-${i}`}
+                  id={`seg-grad-${i}`}
+                  x1={0} y1={ny} x2={0} y2={nodeYs[i + 1]}
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop offset="0%"   stopColor={COLORS[i % COLORS.length]} />
+                  <stop offset="50%"  stopColor={COLORS[i % COLORS.length]} />
+                  <stop offset="100%" stopColor={COLORS[(i + 1) % COLORS.length]} />
+                </linearGradient>
+              ))}
             </defs>
 
             {/* Ghost trunk */}
             <line x1={cx} y1={y0} x2={cx} y2={yLast}
               stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
 
-            {/* Animated trunk */}
-            <line
-              x1={cx} y1={y0} x2={cx} y2={yLast}
-              stroke="rgba(255,255,255,0.18)" strokeWidth={1}
-              strokeDasharray={tLen || 9999}
-              strokeDashoffset={dashOff}
-            />
+            {/* Animated trunk — gradient segments transitioning at midpoints */}
+            {nodeYs.slice(0, -1).map((ny, i) => {
+              const segY1   = ny;
+              const segY2   = nodeYs[i + 1];
+              const segLen  = segY2 - segY1;
+              const drawnIn = Math.max(0, Math.min(segLen, drawn - (segY1 - y0)));
+              return (
+                <line
+                  key={i}
+                  x1={cx} y1={segY1} x2={cx} y2={segY2}
+                  stroke={`url(#seg-grad-${i})`}
+                  strokeWidth={1}
+                  opacity={0.5}
+                  strokeDasharray={segLen}
+                  strokeDashoffset={segLen - drawnIn}
+                />
+              );
+            })}
 
             {/* Per-node graphics */}
             {TIME_LINE.map((_, i) => {
@@ -187,6 +210,35 @@ export function TimelineSection() {
                 </g>
               );
             })}
+
+            {/* ── "Current" pulse node ── */}
+            {nodeYs[N] !== undefined && (() => {
+              const color = COLORS[N % COLORS.length];
+              const ny    = nodeYs[N];
+              const np    = nodeProgress[N];
+              return (
+                <g>
+                  {/* Outer ring */}
+                  <circle cx={cx} cy={ny} r={22}
+                    fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={1} opacity={np} />
+                  {/* Inner ring */}
+                  <circle cx={cx} cy={ny} r={13}
+                    fill="none" stroke={color} strokeWidth={1.5} opacity={np} />
+                  {/* Pulse rings */}
+                  <circle cx={cx} cy={ny} r={13} fill="none" stroke={color} strokeWidth={1} opacity={np}>
+                    <animate attributeName="r"       values="13;32"  dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.6;0"  dur="2s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx={cx} cy={ny} r={13} fill="none" stroke={color} strokeWidth={1} opacity={np}>
+                    <animate attributeName="r"       values="13;32"  dur="2s" begin="0.7s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.6;0"  dur="2s" begin="0.7s" repeatCount="indefinite" />
+                  </circle>
+                  {/* Centre dot */}
+                  <circle cx={cx} cy={ny} r={5}
+                    fill={color} opacity={np} filter={np > 0.7 ? "url(#dot-glow)" : undefined} />
+                </g>
+              );
+            })()}
           </svg>
         )}
 
@@ -248,27 +300,88 @@ export function TimelineSection() {
               </div>
             );
 
+            const headerEl = (
+              <div style={{ opacity: cp, transform: `translateY(${(1 - cp) * 8}px)` }}>
+                <div className="h-px w-10 mb-3" style={{ background: color }} />
+                <p className="font-headline font-bold text-sm text-on-surface tracking-tight leading-snug mb-1">
+                  {item.name}
+                </p>
+                <p className="font-mono text-[11px] italic text-accent-pink">
+                  {item.role}
+                </p>
+              </div>
+            );
+
+            const descEl = (
+              <div style={{ opacity: cp, transform: `translateY(${(1 - cp) * 8}px)` }}>
+                <p className="font-mono text-[11px] text-on-surface-variant leading-relaxed">
+                  {item.description}
+                </p>
+                {item.tools && (
+                  <div className="mt-2.5 flex flex-wrap gap-1">
+                    {item.tools.map((t, ti) => (
+                      <span
+                        key={t}
+                        className="px-1.5 py-0.5 font-mono text-[9px] border"
+                        style={{
+                          color,
+                          borderColor: `${color}35`,
+                          "--tl-ti": ti,
+                        } as React.CSSProperties}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+
             return (
-              <div
-                key={i}
-                ref={(el) => { rowRefs.current[i] = el; }}
-                className="relative z-10 flex items-center py-10"
-              >
-                {/* Left column */}
-                <div className="flex-1 flex justify-end pr-8">
-                  {isRight ? yearEl : contentEl}
+              <div key={i} className="relative z-10 py-16 sm:py-10">
+                {/* ref only wraps the top row so SVG node aligns with date/title */}
+                <div ref={(el) => { rowRefs.current[i] = el; }}>
+                  {/* ── Mobile top row ── */}
+                  <div className="sm:hidden flex items-center justify-between">
+                    <div style={{ color, opacity: np }}>
+                      <p className="text-[10px] font-mono tracking-[0.25em] opacity-60 mb-1">{month}</p>
+                      <p className="text-4xl font-headline font-light tracking-widest leading-none">{year}</p>
+                    </div>
+                    <div>{headerEl}</div>
+                  </div>
+
+                  {/* ── Desktop layout ── */}
+                  <div className="hidden sm:flex items-center">
+                    <div className="flex-1 flex justify-end pr-16">
+                      {isRight ? yearEl : contentEl}
+                    </div>
+                    <div className="w-0 shrink-0" />
+                    <div className="flex-1 pl-16">
+                      {isRight ? contentEl : yearEl}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Zero-width anchor at trunk x — SVG draws node here */}
-                <div className="w-0 shrink-0" />
-
-                {/* Right column */}
-                <div className="flex-1 pl-8">
-                  {isRight ? contentEl : yearEl}
+                {/* ── Mobile description (outside ref so it doesn't shift node y) ── */}
+                <div className="sm:hidden mt-4">
+                  {descEl}
                 </div>
               </div>
             );
           })}
+
+          {/* ── "Current" node label ── */}
+          <div
+            ref={(el) => { rowRefs.current[N] = el; }}
+            className="relative z-10 py-16 sm:py-10 flex justify-center"
+          >
+            <p
+              className="font-mono text-[10px] tracking-[0.25em] uppercase"
+              style={{ color: COLORS[N % COLORS.length], opacity: nodeProgress[N] }}
+            >
+              current
+            </p>
+          </div>
         </div>
 
       </div>
