@@ -357,6 +357,25 @@ const MTNS_NEAR = makeMountainLayer(
 );
 const STARS = makeStars(70);
 
+// ── Weather ───────────────────────────────────────────────────────────────────
+type WeatherType = "none" | "snow" | "rain" | "wind";
+interface WxParticle {
+  x: number; y: number; vx: number; vy: number;
+  r: number; len: number; alpha: number;
+  // wind swirl only
+  trail?: Array<{ x: number; y: number }>;
+  life?: number;
+  maxLife?: number;
+}
+
+// Curl flow field for Van Gogh-style wind swirls — overlapping sine/cosine
+// waves at different scales produce large turbulent vortices.
+function windFlowAngle(x: number, y: number, t: number): number {
+  const s = 0.0032, ts = t * 0.00011;
+  return Math.sin(x * s + ts) * 1.8
+       + Math.cos(y * s * 0.85 - ts * 0.65) * 1.3
+       + Math.sin((x - y) * s * 0.55 + ts * 0.45) * 0.9;
+}
 
 // Building factories (called per mount so window state is per-instance)
 const mkSkysc = () => makeBuildings(33, 11, 28, 68, 120, 0, 2);
@@ -383,6 +402,16 @@ export function LocationCard() {
   } | null>(null);
   if (!bRef.current)
     bRef.current = { sc: mkSkysc(), mr: mkMidR(), ap: mkApts() };
+
+  // Randomized inclement weather — repicked each day/night cycle
+  const weatherRef = useRef<WeatherType | null>(null);
+  if (!weatherRef.current) {
+    const picks: WeatherType[] = ["none", "snow", "rain", "wind"];
+    weatherRef.current = picks[Math.floor(Math.random() * picks.length)];
+  }
+  const wxPRef = useRef<WxParticle[]>([]);
+  const wxPhaseRef = useRef<"on" | "off">("on");
+  const wxPhaseStartRef = useRef(0);
 
   // ── Elevation count-up on scroll into view ────────────────────────────────
   useEffect(() => {
@@ -593,6 +622,21 @@ export function LocationCard() {
       }
     }
 
+    // ── Weather particle spawner ──────────────────────────────────────────────
+    function spawnWx(wx: WeatherType, windAng: number, scatter: boolean): WxParticle {
+      const r = Math.random;
+      if (wx === "snow") {
+        return { x: r() * W, y: scatter ? r() * H : -5, vx: (r() - 0.5) * 18, vy: 45 + r() * 55, r: 1 + r() * 2, len: 0, alpha: 0.4 + r() * 0.5 };
+      }
+      if (wx === "wind") {
+        const maxLife = 3000 + r() * 3000;
+        return { x: r() * W, y: r() * H, vx: 0, vy: 0, r: 0.9 + r() * 1.3, len: 0, alpha: 0.38 + r() * 0.42, trail: [], life: scatter ? r() * maxLife : 0, maxLife };
+      }
+      const spd = 360 + r() * 180;
+      const ln = 10 + r() * 14;
+      return { x: scatter ? r() * W : r() * W - Math.sin(windAng) * H, y: scatter ? r() * H : -ln, vx: Math.sin(windAng) * spd, vy: Math.cos(windAng) * spd, r: 0.5 + r() * 0.4, len: ln, alpha: 0.25 + r() * 0.4 };
+    }
+
     // ── Frame loop ────────────────────────────────────────────────────────────
     function frame(ts: number) {
       animId = requestAnimationFrame(frame);
@@ -625,9 +669,29 @@ export function LocationCard() {
       }
 
       // ── Time-of-day scene params ──────────────────────────────────────────
-      // Start at real local time, fast-forward through 24h every 15 seconds
-      const hr =
-        (startHrRef.current + (tRef.current / 30000) * 24) % 24;
+      // Start at real local time, fast-forward through 24h every 30 seconds
+      const totalHours = startHrRef.current + (tRef.current / 30000) * 24;
+      const hr = totalHours % 24;
+      // ── Weather phase: 15 s on → 15 s off → repeat ───────────────────────
+      const phaseDur = 15000;
+      const phaseElapsed = tRef.current - wxPhaseStartRef.current;
+      if (phaseElapsed >= phaseDur) {
+        wxPhaseStartRef.current = tRef.current;
+        if (wxPhaseRef.current === "on") {
+          wxPhaseRef.current = "off";
+        } else {
+          wxPhaseRef.current = "on";
+          const prev = weatherRef.current;
+          const picks = (["none", "snow", "rain", "wind"] as WeatherType[]).filter(w => w !== prev);
+          weatherRef.current = picks[Math.floor(Math.random() * picks.length)];
+          wxPRef.current = [];
+        }
+      }
+      const isOff = wxPhaseRef.current === "off";
+      // Ease-in over 3 s, ease-out over full 15 s off phase
+      const fadeIn  = !isOff ? Math.min(1, Math.pow(phaseElapsed / 3000, 1.5)) : 1;
+      const fadeOut = isOff ? Math.pow(Math.max(0, 1 - phaseElapsed / phaseDur), 1.5) : 1;
+      const wxFade  = fadeIn * fadeOut;
       let k0 = SCENE_KFS[0],
         k1 = SCENE_KFS[1];
       for (let i = 0; i < SCENE_KFS.length - 1; i++) {
@@ -842,6 +906,100 @@ export function LocationCard() {
         dayFrac,
       );
 
+      // ── Inclement weather ─────────────────────────────────────────────────────
+      const wx = weatherRef.current!;
+      if (wx !== "none" && (wxPhaseRef.current === "on" || wxFade > 0.005)) {
+        const windAng = wx === "snow" ? 0.06 : 0.22;
+        const count = wx === "snow" ? 130 : wx === "rain" ? 230 : 60;
+        const ps = wxPRef.current;
+        // Only spawn new particles during the ON phase
+        if (!isOff) while (ps.length < count) ps.push(spawnWx(wx, windAng, true));
+
+        // Overcast veil — fades with wxFade
+        const oa = (wx === "snow" ? 0.15 : wx === "rain" ? 0.25 : 0.28) * wxFade;
+        ctx!.fillStyle = `rgba(140,155,170,${oa.toFixed(3)})`;
+        ctx!.fillRect(0, 0, W, H);
+
+        ctx!.save();
+        if (wx === "wind") {
+          // ── Van Gogh swirl trails ──────────────────────────────────────────
+          const TRAIL = 42;
+          const SPEED = 105 * wxFade; // slow to a stop during OFF
+          for (let i = 0; i < ps.length; i++) {
+            const p = ps[i];
+            p.life = (p.life ?? 0) + dt;
+            // During OFF, don't respawn expired particles
+            if (p.life > (p.maxLife ?? 6000)) {
+              if (isOff) { ps.splice(i--, 1); continue; }
+              ps[i] = spawnWx(wx, windAng, false);
+              continue;
+            }
+            const ang = windFlowAngle(p.x, p.y, t);
+            p.vx = Math.cos(ang) * SPEED;
+            p.vy = Math.sin(ang) * SPEED;
+            p.x += p.vx * dt * 0.001;
+            p.y += p.vy * dt * 0.001;
+            let wrapped = false;
+            if (p.x < -60) { p.x = W + 60; wrapped = true; }
+            else if (p.x > W + 60) { p.x = -60; wrapped = true; }
+            if (p.y < -60) { p.y = H + 60; wrapped = true; }
+            else if (p.y > H + 60) { p.y = -60; wrapped = true; }
+            const trail = p.trail!;
+            if (wrapped) trail.length = 0;
+            trail.push({ x: p.x, y: p.y });
+            if (trail.length > TRAIL) trail.shift();
+            if (trail.length < 2) continue;
+            const lifeFade = Math.min(1, p.life / 600) * Math.min(1, ((p.maxLife ?? 6000) - p.life) / 600) * wxFade;
+            const t1 = Math.floor(trail.length * 0.35);
+            const t2 = Math.floor(trail.length * 0.68);
+            const tiers = [
+              { from: 0,  to: t1,           a: p.alpha * lifeFade * 0.18 },
+              { from: t1, to: t2,           a: p.alpha * lifeFade * 0.50 },
+              { from: t2, to: trail.length, a: p.alpha * lifeFade },
+            ];
+            for (const { from, to, a } of tiers) {
+              if (to - from < 1) continue;
+              ctx!.beginPath();
+              ctx!.moveTo(trail[from].x, trail[from].y);
+              for (let j = from + 1; j < to; j++) ctx!.lineTo(trail[j].x, trail[j].y);
+              ctx!.strokeStyle = `rgba(195,218,255,${a.toFixed(3)})`;
+              ctx!.lineWidth = p.r;
+              ctx!.lineJoin = "round";
+              ctx!.lineCap = "round";
+              ctx!.stroke();
+            }
+          }
+        } else {
+          // ── Snow / Rain ────────────────────────────────────────────────────
+          for (let i = 0; i < ps.length; i++) {
+            const p = ps[i];
+            // Scale velocity down during OFF so particles visibly slow
+            p.x += p.vx * wxFade * dt * 0.001;
+            p.y += p.vy * wxFade * dt * 0.001;
+            if (wx === "snow") p.x += Math.sin(t * 0.0007 + p.alpha * 12) * 0.4 * wxFade;
+            if (p.y > H + 30 || p.x > W + 150 || p.x < -150) {
+              if (isOff) { ps.splice(i--, 1); continue; }
+              ps[i] = spawnWx(wx, windAng, false);
+              continue;
+            }
+            const a = (p.alpha * wxFade).toFixed(3);
+            if (wx === "snow") {
+              ctx!.beginPath();
+              ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+              ctx!.fillStyle = `rgba(215,230,255,${a})`;
+              ctx!.fill();
+            } else {
+              ctx!.beginPath();
+              ctx!.moveTo(p.x, p.y);
+              ctx!.lineTo(p.x - Math.sin(windAng) * p.len, p.y - Math.cos(windAng) * p.len);
+              ctx!.strokeStyle = `rgba(175,205,235,${a})`;
+              ctx!.lineWidth = p.r;
+              ctx!.stroke();
+            }
+          }
+        }
+        ctx!.restore();
+      }
 
     }
 

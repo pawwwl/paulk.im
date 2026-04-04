@@ -4,7 +4,7 @@ import "./globals.css";
 import Link from "next/link";
 import { CommandPalette } from "@/components/command-palette";
 import { SearchTriggerButton } from "@/components/search-trigger-button";
-import { DotGrid } from "@/components/dot-grid";
+import { DotPattern } from "@/components/dot-pattern";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,8 +32,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body>
-        <DotGrid />
-        <div className="bg-background text-on-surface font-body selection:bg-primary selection:text-on-primary">
+        <DotPattern className="bg-background!" glowColor="#00e5ff" />
+        <div className="relative z-10 text-on-surface font-body selection:bg-primary selection:text-on-primary">
           <CommandPalette />
           <div className="scanline pointer-events-none"></div>
 

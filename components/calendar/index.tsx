@@ -590,7 +590,7 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate, isActive = fal
                 onClick={() => onSelectDate(day.date)}
                 style={animated ? {
                   animation: `cal-cell-in 420ms cubic-bezier(0.34,1.56,0.64,1) ${delay}ms both`,
-                } : { opacity: 0 }}
+                } : { opacity: 1 }}
                 className={`group relative flex flex-col px-3 py-2 focus:z-10 min-h-14 lg:min-h-20 hover:bg-gray-50 dark:hover:bg-white/5 ${
                   day.isCurrentMonth
                     ? "bg-white dark:bg-surface"
