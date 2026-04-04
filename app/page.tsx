@@ -8,6 +8,7 @@ import { TimelineSection } from "@/components/timeline";
 import { SKILLS } from "@/lib/data";
 import Image from "next/image";
 import { ProfileWave } from "@/components/profile-wave";
+import GlitchText from "@/components/glitch-text";
 
 export default function Home() {
   return (
@@ -18,7 +19,8 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-8">
               <h1 className="text-6xl md:text-8xl font-headline font-black leading-[0.9] tracking-tighter text-on-surface">
-                Hii, I'm Paul
+                {"Hii, I'm "}
+                <GlitchText speed={0.4}>Paul</GlitchText>
               </h1>
             </div>
             <div className="lg:col-span-4 pb-4">

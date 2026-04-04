@@ -54,7 +54,7 @@ export function DotPattern({
   const containerRef = useRef<HTMLDivElement>(null)
   const dotsRef = useRef<Dot[]>([])
   const mouseRef = useRef({ x: -1000, y: -1000 })
-  const animationRef = useRef<number>()
+  const animationRef = useRef<number>(null)
   const startTimeRef = useRef(Date.now())
 
   const baseRgb = useMemo(() => hexToRgb(baseColor), [baseColor])
