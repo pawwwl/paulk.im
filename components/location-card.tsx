@@ -358,7 +358,7 @@ const MTNS_NEAR = makeMountainLayer(
 const STARS = makeStars(70);
 
 // ── Weather ───────────────────────────────────────────────────────────────────
-type WeatherType = "none" | "snow" | "rain" | "wind";
+type WeatherType = "none" | "snow" | "rain" | "wind" | "fog" | "storm";
 interface WxParticle {
   x: number; y: number; vx: number; vy: number;
   r: number; len: number; alpha: number;
@@ -366,6 +366,17 @@ interface WxParticle {
   trail?: Array<{ x: number; y: number }>;
   life?: number;
   maxLife?: number;
+}
+interface LightningBolt {
+  pts: Array<{ x: number; y: number }>;
+  branches: Array<Array<{ x: number; y: number }>>;
+  age: number;
+  maxAge: number;
+}
+interface LightningState {
+  bolts: LightningBolt[];
+  flash: number;
+  nextStrike: number;
 }
 
 // Curl flow field for Van Gogh-style wind swirls — overlapping sine/cosine
@@ -406,12 +417,13 @@ export function LocationCard() {
   // Randomized inclement weather — repicked each day/night cycle
   const weatherRef = useRef<WeatherType | null>(null);
   if (!weatherRef.current) {
-    const picks: WeatherType[] = ["none", "snow", "rain", "wind"];
+    const picks: WeatherType[] = ["none", "snow", "rain", "wind", "fog", "storm"];
     weatherRef.current = picks[Math.floor(Math.random() * picks.length)];
   }
   const wxPRef = useRef<WxParticle[]>([]);
   const wxPhaseRef = useRef<"on" | "off">("on");
   const wxPhaseStartRef = useRef(0);
+  const lightningRef = useRef<LightningState>({ bolts: [], flash: 0, nextStrike: 2000 + Math.random() * 4000 });
 
   // ── Elevation count-up on scroll into view ────────────────────────────────
   useEffect(() => {
@@ -628,6 +640,17 @@ export function LocationCard() {
       if (wx === "snow") {
         return { x: r() * W, y: scatter ? r() * H : -5, vx: (r() - 0.5) * 18, vy: 45 + r() * 55, r: 1 + r() * 2, len: 0, alpha: 0.4 + r() * 0.5 };
       }
+      if (wx === "fog") {
+        // Wide, tall wisps that drift slowly left-to-right
+        return { x: scatter ? r() * W : W + 80, y: scatter ? r() * H * 0.85 : r() * H * 0.85, vx: -(4 + r() * 8), vy: (r() - 0.5) * 2, r: 55 + r() * 90, len: 0, alpha: 0.03 + r() * 0.055 };
+      }
+      if (wx === "storm") {
+        // Heavy diagonal rain
+        const spd = 480 + r() * 220;
+        const ang = 0.32;
+        const ln = 14 + r() * 18;
+        return { x: scatter ? r() * W : r() * W - Math.sin(ang) * H, y: scatter ? r() * H : -ln, vx: Math.sin(ang) * spd, vy: Math.cos(ang) * spd, r: 0.6 + r() * 0.5, len: ln, alpha: 0.3 + r() * 0.45 };
+      }
       if (wx === "wind") {
         const maxLife = 3000 + r() * 3000;
         return { x: r() * W, y: r() * H, vx: 0, vy: 0, r: 0.9 + r() * 1.3, len: 0, alpha: 0.38 + r() * 0.42, trail: [], life: scatter ? r() * maxLife : 0, maxLife };
@@ -635,6 +658,33 @@ export function LocationCard() {
       const spd = 360 + r() * 180;
       const ln = 10 + r() * 14;
       return { x: scatter ? r() * W : r() * W - Math.sin(windAng) * H, y: scatter ? r() * H : -ln, vx: Math.sin(windAng) * spd, vy: Math.cos(windAng) * spd, r: 0.5 + r() * 0.4, len: ln, alpha: 0.25 + r() * 0.4 };
+    }
+
+    // ── Lightning bolt generator ──────────────────────────────────────────────
+    function makeBolt(x: number, yTop: number, yBot: number, roughness: number, steps: number) {
+      const pts: Array<{ x: number; y: number }> = [{ x, y: yTop }];
+      let cx = x;
+      for (let i = 1; i <= steps; i++) {
+        cx += (Math.random() - 0.5) * roughness;
+        pts.push({ x: cx, y: yTop + (yBot - yTop) * (i / steps) });
+      }
+      // 2-3 branches off a random mid-segment
+      const branches: Array<Array<{ x: number; y: number }>> = [];
+      const branchCount = 1 + Math.floor(Math.random() * 2);
+      for (let b = 0; b < branchCount; b++) {
+        const startIdx = 2 + Math.floor(Math.random() * (pts.length - 4));
+        const origin = pts[startIdx];
+        const bLen = (yBot - yTop) * (0.2 + Math.random() * 0.3);
+        const bPts: Array<{ x: number; y: number }> = [{ x: origin.x, y: origin.y }];
+        let bx = origin.x;
+        const bSteps = 4 + Math.floor(Math.random() * 3);
+        for (let i = 1; i <= bSteps; i++) {
+          bx += (Math.random() - 0.5) * roughness * 0.7;
+          bPts.push({ x: bx, y: origin.y + bLen * (i / bSteps) });
+        }
+        branches.push(bPts);
+      }
+      return { pts, branches };
     }
 
     // ── Frame loop ────────────────────────────────────────────────────────────
@@ -682,7 +732,7 @@ export function LocationCard() {
         } else {
           wxPhaseRef.current = "on";
           const prev = weatherRef.current;
-          const picks = (["none", "snow", "rain", "wind"] as WeatherType[]).filter(w => w !== prev);
+          const picks = (["none", "snow", "rain", "wind", "fog", "storm"] as WeatherType[]).filter(w => w !== prev);
           weatherRef.current = picks[Math.floor(Math.random() * picks.length)];
           wxPRef.current = [];
         }
@@ -910,13 +960,13 @@ export function LocationCard() {
       const wx = weatherRef.current!;
       if (wx !== "none" && (wxPhaseRef.current === "on" || wxFade > 0.005)) {
         const windAng = wx === "snow" ? 0.06 : 0.22;
-        const count = wx === "snow" ? 130 : wx === "rain" ? 230 : 60;
+        const count = wx === "snow" ? 130 : wx === "rain" ? 230 : wx === "fog" ? 18 : wx === "storm" ? 320 : 60;
         const ps = wxPRef.current;
         // Only spawn new particles during the ON phase
         if (!isOff) while (ps.length < count) ps.push(spawnWx(wx, windAng, true));
 
         // Overcast veil — fades with wxFade
-        const oa = (wx === "snow" ? 0.15 : wx === "rain" ? 0.25 : 0.28) * wxFade;
+        const oa = (wx === "snow" ? 0.15 : wx === "rain" ? 0.25 : wx === "fog" ? 0.08 : wx === "storm" ? 0.42 : 0.28) * wxFade;
         ctx!.fillStyle = `rgba(140,155,170,${oa.toFixed(3)})`;
         ctx!.fillRect(0, 0, W, H);
 
@@ -969,6 +1019,97 @@ export function LocationCard() {
               ctx!.stroke();
             }
           }
+        } else if (wx === "fog") {
+          // ── Fog wisps ─────────────────────────────────────────────────────
+          for (let i = 0; i < ps.length; i++) {
+            const p = ps[i];
+            p.x += p.vx * wxFade * dt * 0.001;
+            p.y += p.vy * wxFade * dt * 0.001 + Math.sin(t * 0.00045 + p.alpha * 20) * 0.15;
+            if (p.x < -p.r * 2) {
+              if (isOff) { ps.splice(i--, 1); continue; }
+              ps[i] = spawnWx(wx, windAng, false);
+              continue;
+            }
+            const a = (p.alpha * wxFade).toFixed(4);
+            const g = ctx!.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+            g.addColorStop(0, `rgba(200,215,225,${a})`);
+            g.addColorStop(1, `rgba(200,215,225,0)`);
+            ctx!.beginPath();
+            ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx!.fillStyle = g;
+            ctx!.fill();
+          }
+        } else if (wx === "storm") {
+          // ── Storm: heavy rain + lightning ─────────────────────────────────
+          const lt = lightningRef.current;
+
+          // Advance bolt ages, cull expired
+          for (let i = lt.bolts.length - 1; i >= 0; i--) {
+            lt.bolts[i].age += dt;
+            if (lt.bolts[i].age > lt.bolts[i].maxAge) lt.bolts.splice(i, 1);
+          }
+
+          // Decay flash
+          lt.flash = Math.max(0, lt.flash - dt * 0.008);
+
+          // Trigger new strike during ON phase
+          if (!isOff && t > lt.nextStrike) {
+            const bx = W * (0.1 + Math.random() * 0.8);
+            const { pts, branches } = makeBolt(bx, 0, H * (0.55 + Math.random() * 0.35), 28, 10);
+            lt.bolts.push({ pts, branches, age: 0, maxAge: 180 + Math.random() * 120 });
+            lt.flash = 0.18 + Math.random() * 0.18;
+            lt.nextStrike = t + 2500 + Math.random() * 5000;
+          }
+
+          // Flash overlay
+          if (lt.flash > 0.005) {
+            ctx!.fillStyle = `rgba(200,220,255,${(lt.flash * wxFade).toFixed(3)})`;
+            ctx!.fillRect(0, 0, W, H);
+          }
+
+          // Draw rain
+          const stormAng = 0.32;
+          for (let i = 0; i < ps.length; i++) {
+            const p = ps[i];
+            p.x += p.vx * wxFade * dt * 0.001;
+            p.y += p.vy * wxFade * dt * 0.001;
+            if (p.y > H + 30 || p.x > W + 200) {
+              if (isOff) { ps.splice(i--, 1); continue; }
+              ps[i] = spawnWx(wx, stormAng, false);
+              continue;
+            }
+            ctx!.beginPath();
+            ctx!.moveTo(p.x, p.y);
+            ctx!.lineTo(p.x - Math.sin(stormAng) * p.len, p.y - Math.cos(stormAng) * p.len);
+            ctx!.strokeStyle = `rgba(180,210,240,${(p.alpha * wxFade).toFixed(3)})`;
+            ctx!.lineWidth = p.r;
+            ctx!.stroke();
+          }
+
+          // Draw bolts
+          function drawPolyline(pts: Array<{ x: number; y: number }>, alpha: number, width: number) {
+            if (pts.length < 2) return;
+            ctx!.beginPath();
+            ctx!.moveTo(pts[0].x, pts[0].y);
+            for (let j = 1; j < pts.length; j++) ctx!.lineTo(pts[j].x, pts[j].y);
+            ctx!.strokeStyle = `rgba(220,235,255,${alpha.toFixed(3)})`;
+            ctx!.lineWidth = width;
+            ctx!.lineJoin = "round";
+            ctx!.stroke();
+          }
+
+          for (const bolt of lt.bolts) {
+            const lifeFrac = 1 - bolt.age / bolt.maxAge;
+            const ba = lifeFrac * lifeFrac * wxFade;
+            // Outer glow
+            drawPolyline(bolt.pts, ba * 0.25, 6);
+            // Core
+            drawPolyline(bolt.pts, ba * 0.9, 1.5);
+            for (const br of bolt.branches) {
+              drawPolyline(br, ba * 0.55, 1);
+            }
+          }
+
         } else {
           // ── Snow / Rain ────────────────────────────────────────────────────
           for (let i = 0; i < ps.length; i++) {
