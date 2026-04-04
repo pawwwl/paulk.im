@@ -18,7 +18,7 @@ const GlitchText: FC<GlitchTextProps> = ({
   className = "",
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null)
   const [isHovered, setIsHovered] = useState(false)
   const [frame, setFrame] = useState(0)
 
@@ -63,7 +63,7 @@ const GlitchText: FC<GlitchTextProps> = ({
     }
 
     timeoutRef.current = schedule()
-    return () => clearTimeout(timeoutRef.current)
+    return () => clearTimeout(timeoutRef?.current as any)
   }, [enableOnHover])
 
   const shouldAnimate = enableOnHover ? isHovered : isBursting

@@ -2,7 +2,7 @@ import { Calendar } from "@/components/calendar";
 import { ChatWidget } from "@/components/chat-widget";
 // import { AirHockey } from "@/components/air-hockey";
 import { DvdCornerEmoji } from "@/components/dvd-corner-emoji";
-import { TronGame } from "@/components/tron-game";
+import { Game2048 } from "@/components/game-2048";
 import { LocationCard } from "@/components/location-card";
 import { TimelineSection } from "@/components/timeline";
 import { SKILLS } from "@/lib/data";
@@ -133,7 +133,7 @@ export default function Home() {
             <LocationCard />
 
             {/* <!-- Tron Game --> */}
-            <TronGame />
+            <Game2048 />
             {/* <!-- DVD Logo --> */}
             <DvdCornerEmoji />
           </div>
