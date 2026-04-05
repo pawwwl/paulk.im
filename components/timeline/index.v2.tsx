@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { TIME_LINE, SKILLS } from "@/lib/data";
 
 const COLORS = ["#4D96D9", "#F4A020", "#E85D7A", "#5AAD6B"];
@@ -23,14 +23,13 @@ function splitDate(d: string) {
 
 // ── Skill sphere ──────────────────────────────────────────────────────────────
 function SkillCloud({ size = 260 }: { size?: number }) {
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const rotRef     = useRef({ x: 0.3, y: 0 });
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const rotRef      = useRef({ x: 0.3, y: 0 });
   const mousePosRef = useRef({ x: size / 2, y: size / 2 });
-  const isDragging = useRef(false);
-  const lastMouse  = useRef({ x: 0, y: 0 });
-  const rafRef     = useRef<number>(0);
+  const isDragging  = useRef(false);
+  const lastMouse   = useRef({ x: 0, y: 0 });
+  const rafRef      = useRef<number>(0);
 
-  // Fibonacci sphere positions
   const positions = (() => {
     const n = SKILLS.length;
     const offset = 2 / n;
@@ -53,39 +52,32 @@ function SkillCloud({ size = 260 }: { size?: number }) {
     const canvas = canvasRef.current;
     const ctx    = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-
     const cx = size / 2, cy = size / 2;
 
     function animate() {
       ctx!.clearRect(0, 0, size, size);
-
-      // Auto-rotate + mouse-influence when not dragging
       if (!isDragging.current) {
-        const dx = mousePosRef.current.x - cx;
-        const dy = mousePosRef.current.y - cy;
+        const dx   = mousePosRef.current.x - cx;
+        const dy   = mousePosRef.current.y - cy;
         const maxD = Math.sqrt(cx * cx + cy * cy);
         const speed = 0.003 + (Math.sqrt(dx * dx + dy * dy) / maxD) * 0.008;
         rotRef.current.y += (dx / size) * speed + 0.004;
         rotRef.current.x += (dy / size) * speed * 0.3;
       }
-
       const cosX = Math.cos(rotRef.current.x);
       const sinX = Math.sin(rotRef.current.x);
       const cosY = Math.cos(rotRef.current.y);
       const sinY = Math.sin(rotRef.current.y);
-
-      // Project, sort back-to-front
       const projected = positions.map(p => {
-        const rx = p.x * cosY - p.z * sinY;
-        const rz = p.x * sinY + p.z * cosY;
-        const ry = p.y * cosX + rz * sinX;
+        const rx  = p.x * cosY - p.z * sinY;
+        const rz  = p.x * sinY + p.z * cosY;
+        const ry  = p.y * cosX + rz * sinX;
         const rz2 = rz * cosX - p.y * sinX;
         const scale   = (rz2 + 200) / 300;
         const opacity = Math.max(0.15, Math.min(1, (rz2 + 110) / 160));
         return { sx: cx + rx, sy: cy + ry, scale, opacity, label: p.label, color: p.color, rz: rz2 };
       });
       projected.sort((a, b) => a.rz - b.rz);
-
       projected.forEach(p => {
         const fontSize = Math.round(9 * p.scale + 1);
         ctx!.save();
@@ -93,7 +85,6 @@ function SkillCloud({ size = 260 }: { size?: number }) {
         ctx!.font         = `500 ${fontSize}px monospace`;
         ctx!.textAlign    = "center";
         ctx!.textBaseline = "middle";
-
         const tw      = ctx!.measureText(p.label).width;
         const padX    = 6 * p.scale;
         const padY    = 3 * p.scale;
@@ -101,24 +92,17 @@ function SkillCloud({ size = 260 }: { size?: number }) {
         const rh      = fontSize + padY * 2;
         const rx      = p.sx - rw / 2;
         const ry      = p.sy - rh / 2;
-        const borderR = rh / 2;
-
-        // Pill border
         ctx!.beginPath();
-        ctx!.roundRect(rx, ry, rw, rh, borderR);
+        ctx!.roundRect(rx, ry, rw, rh, rh / 2);
         ctx!.strokeStyle = p.color;
         ctx!.lineWidth   = 0.8 * p.scale;
         ctx!.stroke();
-
-        // Label
         ctx!.fillStyle = p.color;
         ctx!.fillText(p.label, p.sx, p.sy);
         ctx!.restore();
       });
-
       rafRef.current = requestAnimationFrame(animate);
     }
-
     animate();
     return () => cancelAnimationFrame(rafRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,59 +123,105 @@ function SkillCloud({ size = 260 }: { size?: number }) {
           lastMouse.current = { x: e.clientX, y: e.clientY };
         }
       }}
-      onMouseDown={e => {
-        isDragging.current = true;
-        lastMouse.current  = { x: e.clientX, y: e.clientY };
-      }}
-      onMouseUp={()    => { isDragging.current = false; }}
-      onMouseLeave={()  => { isDragging.current = false; }}
+      onMouseDown={e => { isDragging.current = true; lastMouse.current = { x: e.clientX, y: e.clientY }; }}
+      onMouseUp={()   => { isDragging.current = false; }}
+      onMouseLeave={() => { isDragging.current = false; }}
     />
   );
 }
 
 // ── Timeline ──────────────────────────────────────────────────────────────────
 export function TimelineSectionV2() {
-  const [rotationAngle, setRotationAngle] = useState(0);
-  const [autoRotate,    setAutoRotate]    = useState(true);
-  const [activeId,      setActiveId]      = useState<number | null>(null);
-  const [radius, setRadius] = useState(MAX_radius);
+  // Rotation angle lives purely in refs — RAF writes directly to DOM nodes so
+  // we never trigger a React re-render at 60 fps.
+  // activeId / autoRotate are the only React state; they change infrequently.
+  const [autoRotate, setAutoRotate] = useState(true);
+  const [activeId,   setActiveId]   = useState<number | null>(null);
+  const [radius,     setRadius]     = useState(MAX_radius);
+  const [, startTransition]         = useTransition();
+
+  // Refs that mirror or extend state for use inside RAF / effect closures
+  const radiusRef   = useRef(MAX_radius);
+  const targetIdRef = useRef<number | null>(null); // set synchronously; React state follows via transition
+  radiusRef.current = radius;
 
   useEffect(() => {
     function updateRadius() {
-      setRadius(window.innerWidth < 640 ? 190 : MAX_radius);
+      const r = window.innerWidth < 640 ? 190 : MAX_radius;
+      setRadius(r);
+      radiusRef.current = r;
     }
     updateRadius();
     window.addEventListener("resize", updateRadius);
     return () => window.removeEventListener("resize", updateRadius);
   }, []);
-  const sectionRef    = useRef<HTMLDivElement>(null); // tall scroll container
-  const containerRef  = useRef<HTMLDivElement>(null); // sticky inner content
-  const rafRef        = useRef<number>(0);
-  const lastRef       = useRef<number>(0);
-  const scrollDriven   = useRef(false);
-  const suppressScroll = useRef(false);
-  const rotAngleRef    = useRef(0);   // shadows rotationAngle for RAF access
-  const rotAnimRef     = useRef<number>(0);
 
-  // Lerp rotationAngle to target along the shortest arc
+  const sectionRef  = useRef<HTMLDivElement>(null);
+  const rafRef      = useRef<number>(0);
+  const lastRef     = useRef<number>(0);
+  const rotAngleRef = useRef(0);
+  const rotAnimRef  = useRef<number>(0);
+  const lockedRef   = useRef(false);
+
+  // DOM refs — RAF writes styles directly, never through React
+  const ringRef  = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const N          = TIME_LINE.length;
+  const seg        = 360 / N;
+  const colorStops = [
+    ...TIME_LINE.map((_, i) => `${COLORS[i % COLORS.length]} ${(i * seg).toFixed(1)}deg`),
+    `${COLORS[0]} 360deg`,
+  ].join(", ");
+
+  // Write rotation directly to the DOM — no setState, no re-render
+  function applyRotation(angle: number) {
+    const r   = radiusRef.current;
+    const aid = targetIdRef.current;
+
+    if (ringRef.current) {
+      const from = (((angle - 90) % 360) + 360) % 360;
+      ringRef.current.style.background =
+        `conic-gradient(from ${from.toFixed(2)}deg, ${colorStops})`;
+    }
+
+    nodeRefs.current.forEach((el, i) => {
+      if (!el) return;
+      const angleDeg = ((i / N) * 360 + angle) % 360;
+      const rad      = (angleDeg * Math.PI) / 180;
+      const x        = r * Math.cos(rad);
+      const y        = r * Math.sin(rad);
+      const sinVal   = Math.sin(rad);
+      const isActive = aid === i;
+      const opacity  = isActive ? 1 : Math.max(0.35, 0.35 + 0.65 * ((1 + sinVal) / 2));
+      const scale    = isActive ? 1 : Math.max(0.75, 0.75 + 0.25 * ((1 + sinVal) / 2));
+      const zIndex   = isActive ? 200 : Math.round(50 + 50 * ((1 + Math.cos(rad)) / 2));
+      el.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+      el.style.opacity   = String(opacity);
+      el.style.zIndex    = String(zIndex);
+    });
+  }
+
+  // Lerp to target angle — direct DOM, no setState
   const animateToAngle = (target: number) => {
     cancelAnimationFrame(rotAnimRef.current);
     function step() {
       const cur  = rotAngleRef.current;
-      const diff = ((target - cur + 540) % 360) - 180; // shortest path in [-180, 180]
+      const diff = ((target - cur + 540) % 360) - 180;
       if (Math.abs(diff) < 0.25) {
         rotAngleRef.current = target % 360;
-        setRotationAngle(target % 360);
+        applyRotation(target % 360);
         return;
       }
       const next = cur + diff * 0.12;
       rotAngleRef.current = next;
-      setRotationAngle(next);
+      applyRotation(next);
       rotAnimRef.current = requestAnimationFrame(step);
     }
     rotAnimRef.current = requestAnimationFrame(step);
   };
 
+  // Auto-rotate loop — direct DOM
   useEffect(() => {
     if (!autoRotate) return;
     cancelAnimationFrame(rotAnimRef.current);
@@ -200,113 +230,121 @@ export function TimelineSectionV2() {
       lastRef.current = now;
       const next = (rotAngleRef.current + dt * 0.018) % 360;
       rotAngleRef.current = next;
-      setRotationAngle(next);
+      applyRotation(next);
       rafRef.current = requestAnimationFrame(tick);
     }
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRotate]);
 
-  // ── Scroll-driven node activation ──────────────────────────────────────────
-  // sectionRef is a tall container (N * 100vh). As the user scrolls through it,
-  // the sticky inner div stays pinned and progress (0→1) drives node activation.
+  // ── Scroll-lock via IntersectionObserver ────────────────────────────────────
+  // When the section fully enters the viewport: lock page scroll and smoothly
+  // activate node 0. When the user scrolls again (wheel/touch) while locked:
+  // release the lock and deactivate all nodes.
   useEffect(() => {
-    const N = TIME_LINE.length;
-    function onScroll() {
-      if (suppressScroll.current) return;
-      const el = sectionRef.current;
-      if (!el) return;
-      const { top, height } = el.getBoundingClientRect();
-      const viewH    = window.innerHeight;
-      // progress: 0 when section top reaches viewport top, 1 when section bottom reaches viewport top
-      const scrollable = height - viewH;
-      const progress   = scrollable > 0 ? Math.max(0, Math.min(1, -top / scrollable)) : 0;
+    const section = sectionRef.current;
+    if (!section) return;
 
-      if (top > 0) {
-        // Section not yet pinned — stay inactive
-        scrollDriven.current = false;
-        setActiveId(null);
-        setAutoRotate(true);
-        return;
-      }
-
-      if (progress >= 1) {
-        // Scrolled past last node — reset
-        scrollDriven.current = false;
-        setActiveId(null);
-        setAutoRotate(true);
-        return;
-      }
-
-      const idx = Math.min(N - 1, Math.floor(progress * N));
-      scrollDriven.current = true;
-      setActiveId(prev => {
-        if (prev === idx) return prev;
-        animateToAngle(270 - (idx / N) * 360);
-        return idx;
-      });
+    function lock() {
+      if (lockedRef.current) return;
+      lockedRef.current = true;
+      document.body.style.overflow = "hidden";
+      // Damped rotation to node 0
+      targetIdRef.current = 0;
+      animateToAngle(270);
       setAutoRotate(false);
+      startTransition(() => setActiveId(0));
     }
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    function unlock() {
+      if (!lockedRef.current) return;
+      lockedRef.current = false;
+      document.body.style.overflow = "";
+      targetIdRef.current = null;
+      setAutoRotate(true);
+      startTransition(() => setActiveId(null));
+    }
+
+    function onWheel(e: WheelEvent) {
+      if (lockedRef.current) {
+        // Any scroll while locked releases it
+        e.preventDefault();
+        unlock();
+      }
+    }
+
+    function onTouchMove() {
+      if (lockedRef.current) unlock();
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          lock();
+          window.addEventListener("wheel",     onWheel,     { passive: false });
+          window.addEventListener("touchmove", onTouchMove, { passive: true  });
+        } else {
+          unlock();
+          window.removeEventListener("wheel",     onWheel);
+          window.removeEventListener("touchmove", onTouchMove);
+        }
+      },
+      { threshold: 0.9 }
+    );
+
+    observer.observe(section);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("wheel",     onWheel);
+      window.removeEventListener("touchmove", onTouchMove);
+      document.body.style.overflow = "";
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const toggleNode = (i: number) => {
-    scrollDriven.current = false;
-    if (activeId === i) {
-      setActiveId(null);
-      setAutoRotate(true);
-    } else {
-      const targetAngle = (i / TIME_LINE.length) * 360;
-      animateToAngle(270 - targetAngle);
-      setActiveId(i);
-      setAutoRotate(false);
+  // ── Prev / Next / node click ────────────────────────────────────────────────
+  const goTo = (idx: number) => {
+    targetIdRef.current = idx;
+    animateToAngle(270 - (idx / N) * 360);
+    setAutoRotate(false);
+    startTransition(() => setActiveId(idx));
+  };
 
-      const el = sectionRef.current;
-      if (el) {
-        const sectionTop = el.getBoundingClientRect().top + window.scrollY;
-        const scrollable = el.offsetHeight - window.innerHeight;
-        suppressScroll.current = true;
-        window.scrollTo({ top: sectionTop + (i / TIME_LINE.length) * scrollable, behavior: "smooth" });
-        window.addEventListener("scrollend", () => { suppressScroll.current = false; }, { once: true });
-      }
+  const prevNode = () => goTo(((targetIdRef.current ?? 0) - 1 + N) % N);
+  const nextNode = () => goTo(((targetIdRef.current ?? -1) + 1) % N);
+
+  const toggleNode = (i: number) => {
+    if (targetIdRef.current === i) {
+      targetIdRef.current = null;
+      setAutoRotate(true);
+      startTransition(() => setActiveId(null));
+    } else {
+      goTo(i);
     }
   };
 
   return (
-    // Tall outer container — gives scroll travel space (N+1 screens)
-    <div ref={sectionRef} style={{ height: `${TIME_LINE.length * 45 + 100}vh` }}>
-      {/* Sticky inner — pins to viewport while user scrolls through outer */}
-      <div
-        ref={containerRef}
-        className="sticky top-0 h-screen flex items-center justify-center px-6"
-        onClick={() => { if (!scrollDriven.current) { setActiveId(null); setAutoRotate(true); } }}
-      >
+    <div ref={sectionRef} className="h-screen flex flex-col items-center justify-center px-6">
       <div
         className="relative flex items-center justify-center"
         style={{ height: radius * 2 + 120 }}
+        onClick={() => {
+          if (targetIdRef.current !== null) {
+            targetIdRef.current = null;
+            setAutoRotate(true);
+            startTransition(() => setActiveId(null));
+          }
+        }}
       >
-        {/* Orbit ring — conic gradient between node colors, rotates with nodes */}
-        {(() => {
-          const from = (((rotationAngle - 90) % 360) + 360) % 360;
-          const seg  = 360 / TIME_LINE.length;
-          const stops = [
-            ...TIME_LINE.map((_, i) => `${COLORS[i % COLORS.length]} ${(i * seg).toFixed(1)}deg`),
-            `${COLORS[0]} 360deg`,
-          ].join(", ");
-          return (
-            <div
-              className="absolute rounded-full flex items-center justify-center"
-              style={{ width: radius * 2, height: radius * 2, background: `conic-gradient(from ${from.toFixed(2)}deg, ${stops})`, opacity: 0.5 }}
-            >
-              {/* Inner circle punches a hole to create the ring */}
-              <div className="rounded-full" style={{ width: radius * 2 - 3, height: radius * 2 - 3, background: "#0a0a0a" }} />
-            </div>
-          );
-        })()}
-
+        {/* Orbit ring — RAF writes background directly via ringRef */}
+        <div
+          ref={ringRef}
+          className="absolute rounded-full flex items-center justify-center"
+          style={{ width: radius * 2, height: radius * 2, opacity: 0.5 }}
+        >
+          <div className="rounded-full" style={{ width: radius * 2 - 3, height: radius * 2 - 3, background: "#0a0a0a" }} />
+        </div>
 
         {/* Center — skill cloud or active item details */}
         <div
@@ -339,29 +377,16 @@ export function TimelineSectionV2() {
           })()}
         </div>
 
-        {/* Nodes */}
+        {/* Nodes — outer div is RAF-owned (no style prop); inner div is React-owned */}
         {TIME_LINE.map((item, i) => {
           const color    = COLORS[i % COLORS.length];
-          const angleDeg = ((i / TIME_LINE.length) * 360 + rotationAngle) % 360;
-          const rad      = (angleDeg * Math.PI) / 180;
-          const x        = radius * Math.cos(rad);
-          const y        = radius * Math.sin(rad);
-          const sinVal   = Math.sin(rad);
-          const opacity  = Math.max(0.35, 0.35 + 0.65 * ((1 + sinVal) / 2));
-          const scale    = Math.max(0.75, 0.75 + 0.25 * ((1 + sinVal) / 2));
-          const zIndex   = Math.round(50 + 50 * ((1 + Math.cos(rad)) / 2));
           const isActive = activeId === i;
           const { month, year } = splitDate(item.date);
-
           return (
             <div
               key={i}
-              className="absolute transition-[transform,opacity] duration-200 cursor-pointer"
-              style={{
-                transform: `translate(${x}px, ${y}px) scale(${isActive ? 1 : scale})`,
-                opacity:    isActive ? 1 : opacity,
-                zIndex:     isActive ? 200 : zIndex,
-              }}
+              ref={el => { nodeRefs.current[i] = el; }}
+              className="absolute cursor-pointer"
               onClick={e => { e.stopPropagation(); toggleNode(i); }}
             >
               <div
@@ -374,13 +399,35 @@ export function TimelineSectionV2() {
                 }}
               >
                 <span className="font-mono text-[8px] tracking-[0.15em] leading-none" style={{ color: isActive ? "#000" : `${color}99` }}>{month}</span>
-                <span className="font-headline text-sm font-light leading-tight" style={{ color: isActive ? "#000" : color }}>{year}</span>
+                <span className="font-headline text-sm font-light leading-tight"       style={{ color: isActive ? "#000" : color }}>{year}</span>
               </div>
-
             </div>
           );
         })}
       </div>
+
+      {/* Prev / Next navigation */}
+      <div className="flex items-center gap-6 mt-8">
+        <button
+          className="px-4 py-1.5 font-mono text-[11px] tracking-widest border border-white/20 text-white/50 hover:text-white hover:border-white/50 transition-colors disabled:opacity-20 disabled:pointer-events-none"
+          onClick={prevNode}
+          disabled={activeId === null}
+        >
+          ← prev
+        </button>
+
+        {/* Node index indicator */}
+        <span className="font-mono text-[10px] text-white/30 tabular-nums w-12 text-center">
+          {activeId !== null ? `${String(activeId + 1).padStart(2, "0")} / ${String(N).padStart(2, "0")}` : ""}
+        </span>
+
+        <button
+          className="px-4 py-1.5 font-mono text-[11px] tracking-widest border border-white/20 text-white/50 hover:text-white hover:border-white/50 transition-colors disabled:opacity-20 disabled:pointer-events-none"
+          onClick={nextNode}
+          disabled={activeId === null}
+        >
+          next →
+        </button>
       </div>
     </div>
   );
