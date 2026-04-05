@@ -10,6 +10,7 @@ import Image from "next/image";
 import { PixelImage } from "@/components/pixel-image";
 import { ProfileWave } from "@/components/profile-wave";
 import GlitchText from "@/components/glitch-text";
+import { TimelineSectionV2 } from "@/components/timeline/index.v2";
 
 export default function Home() {
   return (
@@ -62,22 +63,10 @@ export default function Home() {
           <div className="lg:col-span-7 flex flex-col space-y-6">
             <ChatWidget />
 
-            <div className="space-y-6">
-              <div className="flex flex-wrap gap-2">
-                {SKILLS.map((skill) => (
-                  <span
-                    key={skill.label}
-                    className={`px-3 py-1 bg-surface-container border border-outline font-mono text-xs ${skill.type === "domain" ? "text-accent-pink" : skill.type === "language" ? "text-accent-green" : skill.type === "framework" ? "text-primary" : skill.type === "database" ? "text-accent-blue" : "text-accent-purple"}`}
-                  >
-                    {skill.label}
-                  </span>
-                ))}
-              </div>
-            </div>
             {/* <!-- Chat Interface Component --> */}
           </div>
         </section>
-        <TimelineSection />
+        <TimelineSectionV2 />
         {/* <!-- Bento Grid: Tech-centric Artifacts --> */}
         <section className="mb-20">
           <div className="flex items-center justify-between mb-10">

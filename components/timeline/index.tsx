@@ -130,6 +130,8 @@ export function TimelineSection() {
               ))}
             </defs>
 
+            {/* Trunk lines — blurred on mobile so they don't intrude on text */}
+            <g className="blur-[2px] sm:blur-none">
             {/* Ghost trunk */}
             <line x1={cx} y1={y0} x2={cx} y2={yLast}
               stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
@@ -152,6 +154,7 @@ export function TimelineSection() {
                 />
               );
             })}
+            </g>
 
             {/* Per-node graphics */}
             {TIME_LINE.map((_, i) => {
@@ -363,7 +366,7 @@ export function TimelineSection() {
                 </div>
 
                 {/* ── Mobile description (outside ref so it doesn't shift node y) ── */}
-                <div className="sm:hidden mt-4">
+                <div className="sm:hidden mt-6">
                   {descEl}
                 </div>
               </div>

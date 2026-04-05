@@ -97,7 +97,7 @@ export const ChatWidget = () => {
     <div className="grid gap-8 grid-cols-1">
       <div
         className={`col-span-2 bg-surface border border-outline flex flex-col shadow-2xl overflow-hidden group hover:border-primary/50 transition-all duration-300 ${
-          isFullscreen ? "fixed inset-0 z-50 h-screen w-screen" : "h-[550px]"
+          isFullscreen ? "fixed inset-0 z-50 h-screen w-screen" : "h-[575px]"
         }`}
       >
         {/* Chat Header */}
