@@ -154,7 +154,16 @@ export function TimelineSectionV2() {
   const [rotationAngle, setRotationAngle] = useState(0);
   const [autoRotate,    setAutoRotate]    = useState(true);
   const [activeId,      setActiveId]      = useState<number | null>(null);
-  const radius = MAX_radius;
+  const [radius, setRadius] = useState(MAX_radius);
+
+  useEffect(() => {
+    function updateRadius() {
+      setRadius(window.innerWidth < 640 ? 190 : MAX_radius);
+    }
+    updateRadius();
+    window.addEventListener("resize", updateRadius);
+    return () => window.removeEventListener("resize", updateRadius);
+  }, []);
   const sectionRef    = useRef<HTMLDivElement>(null); // tall scroll container
   const containerRef  = useRef<HTMLDivElement>(null); // sticky inner content
   const rafRef        = useRef<number>(0);
