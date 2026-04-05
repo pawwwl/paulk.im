@@ -147,7 +147,7 @@ export function TimelineSectionV2() {
 
   useEffect(() => {
     function updateRadius() {
-      const r = window.innerWidth < 640 ? 190 : MAX_radius;
+      const r = window.innerWidth < 640 ? 170 : MAX_radius;
       setRadius(r);
       radiusRef.current = r;
     }
