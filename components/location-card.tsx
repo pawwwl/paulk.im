@@ -358,7 +358,28 @@ const MTNS_NEAR = makeMountainLayer(
 const STARS = makeStars(70);
 
 // ── Weather ───────────────────────────────────────────────────────────────────
-type WeatherType = "none" | "snow" | "rain" | "wind" | "fog" | "storm";
+type WeatherType = "none" | "snow" | "rain" | "wind" | "fog" | "storm" | "earthquake";
+interface EqCollapse {
+  layer: "sc" | "mr" | "ap";
+  idx: number;
+  tilt: number;
+  targetTilt: number;
+  fallY: number;
+  type: "collapse" | "lean";
+  startDelay: number; // ms before this building starts moving
+}
+interface EqSmoke {
+  x: number; y: number; vx: number; vy: number;
+  r: number; alpha: number; life: number; maxLife: number;
+}
+interface EqState {
+  eqTime: number;
+  shakeAmt: number;
+  collapses: EqCollapse[];
+  debris: Array<{ x: number; y: number; vx: number; vy: number; w: number; h: number; rot: number; rotV: number; alpha: number; life: number }>;
+  smoke: EqSmoke[];
+  initialized: boolean;
+}
 interface WxParticle {
   x: number; y: number; vx: number; vy: number;
   r: number; len: number; alpha: number;
@@ -417,13 +438,14 @@ export function LocationCard() {
   // Randomized inclement weather — repicked each day/night cycle
   const weatherRef = useRef<WeatherType | null>(null);
   if (!weatherRef.current) {
-    const picks: WeatherType[] = ["none", "snow", "rain", "wind", "fog", "storm"];
+    const picks: WeatherType[] = ["none", "snow", "rain", "wind", "fog", "storm", "earthquake"];
     weatherRef.current = picks[Math.floor(Math.random() * picks.length)];
   }
   const wxPRef = useRef<WxParticle[]>([]);
   const wxPhaseRef = useRef<"on" | "off">("on");
   const wxPhaseStartRef = useRef(0);
   const lightningRef = useRef<LightningState>({ bolts: [], flash: 0, nextStrike: 2000 + Math.random() * 4000 });
+  const eqStateRef = useRef<EqState>({ eqTime: 0, shakeAmt: 0, collapses: [], debris: [], smoke: [], initialized: false });
 
   // ── Elevation count-up on scroll into view ────────────────────────────────
   useEffect(() => {
@@ -541,8 +563,14 @@ export function LocationCard() {
       winCol: string,
       dayWinCol?: string,
       dayFrac = 0,
+      alphaMap?: Map<number, number>,
     ) {
-      for (const b of buildings) {
+      for (let bIdx = 0; bIdx < buildings.length; bIdx++) {
+        const alphaOverride = alphaMap?.get(bIdx);
+        if (alphaOverride === 0) continue;
+        const needsAlpha = alphaOverride !== undefined && alphaOverride < 1;
+        if (needsAlpha) { ctx!.save(); ctx!.globalAlpha = alphaOverride!; }
+        const b = buildings[bIdx];
         for (let copy = 0; copy < 2; copy++) {
           const sx = b.x - scrollX + copy * TILE;
           if (sx + b.w < 0 || sx > W) continue;
@@ -631,6 +659,7 @@ export function LocationCard() {
             ctx!.fill();
           }
         }
+        if (needsAlpha) ctx!.restore();
       }
     }
 
@@ -732,9 +761,10 @@ export function LocationCard() {
         } else {
           wxPhaseRef.current = "on";
           const prev = weatherRef.current;
-          const picks = (["none", "snow", "rain", "wind", "fog", "storm"] as WeatherType[]).filter(w => w !== prev);
+          const picks = (["none", "snow", "rain", "wind", "fog", "storm", "earthquake"] as WeatherType[]).filter(w => w !== prev);
           weatherRef.current = picks[Math.floor(Math.random() * picks.length)];
           wxPRef.current = [];
+          eqStateRef.current = { eqTime: 0, shakeAmt: 0, collapses: [], debris: [], smoke: [], initialized: false };
         }
       }
       const isOff = wxPhaseRef.current === "off";
@@ -810,6 +840,13 @@ export function LocationCard() {
       const mR = Math.min(W * 0.1, H * 0.22);
       const mx = W * (0.06 + 0.88 * nightProg);
       const my = H * (0.55 - 0.48 * Math.sin(moonAngle));
+
+      // ── Global save — earthquake shake offset applied here ────────────��───────
+      ctx!.save();
+      if (weatherRef.current === "earthquake" && eqStateRef.current.shakeAmt > 0.5) {
+        const s = eqStateRef.current.shakeAmt;
+        ctx!.translate((Math.random() - 0.5) * s * 2, (Math.random() - 0.5) * s * 0.6);
+      }
 
       // ── Sky ────────────────────────────────────────────────────────────────
       const sky = ctx!.createLinearGradient(0, 0, 0, H);
@@ -928,6 +965,43 @@ export function LocationCard() {
         dayWinAlpha > 0.01
           ? `rgba(160,205,235,${dayWinAlpha.toFixed(2)})`
           : undefined;
+      // During earthquake, the earthquake block owns drawing collapsed buildings to avoid double-draw.
+      // Only skip buildings that the earthquake block will actually draw (fallY still on-screen).
+      // Once a building has fallen off-screen, let drawBuildings show it normally again.
+      const eqActive = weatherRef.current === "earthquake" && (wxPhaseRef.current === "on" || wxFade > 0.005) && eqStateRef.current.initialized;
+      const eqVisible = (c: EqCollapse, buildings: Building[]) => {
+        const b = buildings[c.idx];
+        return b && c.fallY <= H + b.h + 100;
+      };
+      // Compute clearFade here so drawBuildings can use replenish alpha
+      const EQ_CLEAR_START = 10000, EQ_CLEAR_END = 15000;
+      const eqClearFade = !eqActive ? 1 : eqStateRef.current.eqTime < EQ_CLEAR_START ? 1
+        : Math.max(0, 1 - (eqStateRef.current.eqTime - EQ_CLEAR_START) / (EQ_CLEAR_END - EQ_CLEAR_START));
+      const replenishAlpha = 1 - eqClearFade;
+      const mkAlphaMap = (layer: "sc" | "mr" | "ap", buildings: Building[]) => {
+        if (!eqActive) return undefined;
+        const m = new Map<number, number>();
+        for (const c of eqStateRef.current.collapses) {
+          if (c.layer !== layer || !eqVisible(c, buildings)) continue;
+          if (eqStateRef.current.eqTime < c.startDelay) continue; // not yet started → drawn normally
+          let alpha: number;
+          if (replenishAlpha > 0.005) {
+            // clear phase: fade functional building back in
+            alpha = replenishAlpha;
+          } else {
+            // active phase: fade functional building out as broken building tilts in
+            const tiltFrac = Math.abs(c.targetTilt) > 0
+              ? Math.min(1, Math.abs(c.tilt) / Math.abs(c.targetTilt))
+              : 1;
+            alpha = 1 - tiltFrac;
+          }
+          m.set(c.idx, alpha < 0.005 ? 0 : alpha);
+        }
+        return m.size > 0 ? m : undefined;
+      };
+      const scAlpha = mkAlphaMap("sc", sc);
+      const mrAlpha = mkAlphaMap("mr", mr);
+      const apAlpha = mkAlphaMap("ap", ap);
       const scScroll = (scroll * 0.5) % TILE;
       drawBuildings(
         sc,
@@ -936,6 +1010,7 @@ export function LocationCard() {
         `rgba(255,155,50,${(litFrac * 0.72).toFixed(2)})`,
         dayWinCol,
         dayFrac,
+        scAlpha,
       );
       const mrScroll = (scroll * 0.72) % TILE;
       drawBuildings(
@@ -945,6 +1020,7 @@ export function LocationCard() {
         `rgba(255,140,42,${(litFrac * 0.58).toFixed(2)})`,
         dayWinCol,
         dayFrac,
+        mrAlpha,
       );
       const apScroll = (scroll * 1.0) % TILE;
       drawBuildings(
@@ -954,6 +1030,7 @@ export function LocationCard() {
         `rgba(255,125,38,${(litFrac * 0.5).toFixed(2)})`,
         dayWinCol,
         dayFrac,
+        apAlpha,
       );
 
       // ── Inclement weather ─────────────────────────────────────────────────────
@@ -962,8 +1039,15 @@ export function LocationCard() {
         const windAng = wx === "snow" ? 0.06 : 0.22;
         const count = wx === "snow" ? 130 : wx === "rain" ? 230 : wx === "fog" ? 18 : wx === "storm" ? 320 : 60;
         const ps = wxPRef.current;
-        // Only spawn new particles during the ON phase
-        if (!isOff) while (ps.length < count) ps.push(spawnWx(wx, windAng, true));
+        // Spawn up to 25 new particles per frame to avoid a single-frame spike
+        if (!isOff) {
+          const spawnCap = 25;
+          let spawned = 0;
+          while (ps.length < count && spawned < spawnCap) {
+            ps.push(spawnWx(wx, windAng, ps.length === 0));
+            spawned++;
+          }
+        }
 
         // Overcast veil — fades with wxFade
         const oa = (wx === "snow" ? 0.15 : wx === "rain" ? 0.25 : wx === "fog" ? 0.08 : wx === "storm" ? 0.42 : 0.28) * wxFade;
@@ -1110,6 +1194,219 @@ export function LocationCard() {
             }
           }
 
+        } else if (wx === "earthquake") {
+          // ── Earthquake: shake + building collapse + debris ─────────────────
+          const eqs = eqStateRef.current;
+
+          // ── Init: select most buildings across all layers ─────────────────
+          if (!eqs.initialized) {
+            eqs.initialized = true;
+            const rng = mkRng(42);
+            const addLayer = (layer: "sc" | "mr" | "ap", buildings: Building[], collapseRate: number, leanRate: number) => {
+              buildings.forEach((_, idx) => {
+                const r = rng();
+                const dir = rng() > 0.5 ? 1 : -1;
+                if (r < collapseRate) {
+                  eqs.collapses.push({ layer, idx, tilt: 0, targetTilt: dir * (Math.PI * 0.38 + rng() * 0.3), fallY: 0, type: "collapse", startDelay: rng() * 3000 });
+                } else if (r < collapseRate + leanRate) {
+                  eqs.collapses.push({ layer, idx, tilt: 0, targetTilt: dir * (0.06 + rng() * 0.14), fallY: 0, type: "lean", startDelay: rng() * 3000 });
+                }
+              });
+            };
+            addLayer("sc", sc, 0.45, 0.35);
+            addLayer("mr", mr, 0.40, 0.40);
+            addLayer("ap", ap, 0.35, 0.45);
+          }
+
+          // ── Shake: 0–5 s ramp up, 5–10 s ramp down, 10–15 s quiet exit ──
+          eqs.eqTime += dt;
+          const EQ_PEAK = 5000, EQ_SHAKE_END = 10000, EQ_MAX = 14;
+          const exitPhase = eqs.eqTime >= EQ_SHAKE_END;
+          if (eqs.eqTime < EQ_PEAK) {
+            eqs.shakeAmt = EQ_MAX * Math.sqrt(eqs.eqTime / EQ_PEAK);
+          } else if (eqs.eqTime < EQ_SHAKE_END) {
+            eqs.shakeAmt = EQ_MAX * Math.pow(1 - (eqs.eqTime - EQ_PEAK) / (EQ_SHAKE_END - EQ_PEAK), 2);
+          } else {
+            eqs.shakeAmt = 0;
+          }
+
+          // ── Dust veil ─────────────────────────────────────────────────────
+          // Fade out over last 5 s of the 15 s on-phase (10 000 → 15 000 ms)
+          const clearFade = eqClearFade;
+          ctx!.fillStyle = `rgba(160,130,85,${(0.22 * wxFade * clearFade).toFixed(3)})`;
+          ctx!.fillRect(-20, -20, W + 40, H + 40);
+
+          // ── Collapse / lean each selected building ─────────────────────────
+          for (const col of eqs.collapses) {
+            if (eqs.eqTime < col.startDelay) continue;
+            const buildings = col.layer === "sc" ? sc : col.layer === "mr" ? mr : ap;
+            const sf = col.layer === "sc" ? 0.5 : col.layer === "mr" ? 0.72 : 1.0;
+            const b = buildings[col.idx];
+            const scrollX = (scroll * sf) % TILE;
+
+            // shake intensity drives tilt speed and debris chaos (peaks at 5 s)
+            const physScale = isOff ? 1 : wxFade;
+            const shakeIntensity = eqs.shakeAmt / EQ_MAX; // 0–1
+            const tiltDir = col.targetTilt > 0 ? 1 : -1;
+            if (exitPhase) {
+              col.tilt = col.targetTilt; // snap so all buildings are fully tilted for clear
+            } else if (Math.abs(col.tilt) < Math.abs(col.targetTilt) - 0.001) {
+              // linear rate directly proportional to shake intensity so tilt is visible by 3-5s
+              const rate = 0.06 + shakeIntensity * 0.24; // 0.06–0.30 rad/s
+              col.tilt += tiltDir * rate * dt * 0.001 * physScale;
+              if (Math.abs(col.tilt) > Math.abs(col.targetTilt)) col.tilt = col.targetTilt;
+            }
+            if (exitPhase) {
+              // hold position during clear phase — fade out via clearFade instead
+            } else if (col.type === "collapse") {
+              col.fallY += Math.abs(col.tilt) * 180 * dt * 0.001 * physScale;
+            }
+
+            // skip drawing once fully off-screen below
+            if (col.fallY > H + b.h + 100) continue;
+
+            for (let copy = 0; copy < 2; copy++) {
+              const sx = b.x - scrollX + copy * TILE;
+              if (sx + b.w < -300 || sx > W + 300) continue;
+              const top = H - b.h - col.fallY;
+              const pivotX = col.tilt > 0 ? sx + b.w : sx;
+
+              // Debris: starts at 3 s, intensity and velocity scale with shake
+              const activePhase = eqs.eqTime >= 3000 && !exitPhase && !isOff;
+              if (activePhase && col.type === "collapse" && Math.abs(col.tilt) > 0.05 && col.fallY < b.h * 2) {
+                const spawnChance = 0.04 + shakeIntensity * 0.32;
+                if (Math.random() < spawnChance) {
+                  const speed = 80 + shakeIntensity * 240;
+                  for (let n = 0; n < Math.ceil(1 + shakeIntensity * 2); n++) {
+                    eqs.debris.push({
+                      x: sx + Math.random() * b.w, y: top + Math.random() * b.h * 0.5,
+                      vx: (Math.random() - 0.5) * speed * 2, vy: -(Math.random() * speed + 40),
+                      w: 2 + Math.random() * 9, h: 2 + Math.random() * 7,
+                      rot: Math.random() * Math.PI * 2, rotV: (Math.random() - 0.5) * 10,
+                      alpha: 0.65 + Math.random() * 0.35, life: 1800 + Math.random() * 1200,
+                    });
+                  }
+                }
+              }
+
+              // Smoke: also gated to active phase, rate scales with intensity
+              if (activePhase && Math.abs(col.tilt) > 0.08 && Math.random() < 0.03 + shakeIntensity * 0.07) {
+                eqs.smoke.push({
+                  x: sx + b.w * (0.15 + Math.random() * 0.7),
+                  y: top + b.h * (0.05 + Math.random() * 0.35),
+                  vx: (Math.random() - 0.5) * 14,
+                  vy: -(10 + Math.random() * 22),
+                  r: 5 + Math.random() * 10,
+                  alpha: 0.09 + Math.random() * 0.11,
+                  life: 3500 + Math.random() * 3000,
+                  maxLife: 3500 + Math.random() * 3000,
+                });
+              }
+
+              // Draw tilted building: fades in with tilt, fades out during clear phase
+              const tiltFrac = Math.abs(col.targetTilt) > 0
+                ? Math.min(1, Math.abs(col.tilt) / Math.abs(col.targetTilt))
+                : 1;
+              ctx!.save();
+              ctx!.globalAlpha = wxFade * clearFade * tiltFrac;
+              ctx!.translate(pivotX, H);
+              ctx!.rotate(col.tilt);
+              ctx!.translate(-pivotX, -H);
+
+              const bc = lerpC3([72, 55, 43] as C3, b.dayFill, dayFrac * 0.2);
+              ctx!.fillStyle = `rgb(${bc[0] | 0},${bc[1] | 0},${bc[2] | 0})`;
+              ctx!.fillRect(sx, top, b.w, b.h);
+              ctx!.strokeStyle = "rgba(40,28,18,0.85)";
+              ctx!.lineWidth = 0.75;
+              ctx!.strokeRect(sx + 0.375, top + 0.375, b.w - 0.75, b.h - 0.75);
+
+              // Crack lines
+              const crk = mkRng((b.x * 41) | 0);
+              ctx!.strokeStyle = "rgba(22,12,6,0.6)";
+              ctx!.lineWidth = 1;
+              for (let c = 0; c < 4; c++) {
+                const ckx = sx + 4 + crk() * (b.w - 8);
+                const cky = top + 4 + crk() * (b.h - 8);
+                ctx!.beginPath();
+                ctx!.moveTo(ckx, cky);
+                ctx!.lineTo(ckx + (crk() - 0.5) * 18, cky + crk() * 28);
+                ctx!.stroke();
+              }
+
+              // Broken windows — dark with occasional fire glow
+              const csp2 = (b.w - 6) / b.cols;
+              const rsp2 = (b.h - 8) / b.rows;
+              for (let row = 0; row < b.rows; row++) {
+                for (let col2 = 0; col2 < b.cols; col2++) {
+                  const wx2 = sx + 3 + col2 * csp2;
+                  const wy2 = top + 5 + row * rsp2;
+                  const isFire = mkRng((b.x * 13 + row * 7 + col2 * 3) | 0)() > 0.93;
+                  ctx!.fillStyle = isFire
+                    ? "rgba(255,110,10,0.7)"
+                    : "rgba(12,8,5,0.88)";
+                  ctx!.fillRect(wx2, wy2, 4, 5);
+                }
+              }
+
+              ctx!.restore();
+
+              // Rising dust cloud at pivot base
+              const dustAmt = Math.min(1, Math.abs(col.tilt) / 0.3) * wxFade * clearFade;
+              if (dustAmt > 0.01) {
+                const dustRad = b.w * (1.5 + Math.abs(col.tilt) * 2.5);
+                const dg = ctx!.createRadialGradient(pivotX, H, 0, pivotX, H, dustRad);
+                dg.addColorStop(0, `rgba(175,145,100,${(0.5 * dustAmt).toFixed(3)})`);
+                dg.addColorStop(0.45, `rgba(175,145,100,${(0.18 * dustAmt).toFixed(3)})`);
+                dg.addColorStop(1, "rgba(175,145,100,0)");
+                ctx!.fillStyle = dg;
+                ctx!.fillRect(pivotX - dustRad, H - dustRad, dustRad * 2, dustRad);
+              }
+            }
+          }
+
+          // ── Smoke — rises off the top during off phase ────────────────────
+          for (let i = eqs.smoke.length - 1; i >= 0; i--) {
+            const s = eqs.smoke[i];
+            s.x += s.vx * dt * 0.001;
+            s.y += s.vy * dt * 0.001;
+            s.vx += (Math.random() - 0.5) * 3 * dt * 0.001;
+            s.vy *= 1 - 0.002 * dt;
+            if (!isOff && !exitPhase) s.life -= dt;
+            const sr = Math.max(0, s.r * (1 + (1 - s.life / s.maxLife) * 5));
+            // Exit when off-screen top; during on phase also expire by life
+            if (s.y + sr < -20 || s.life <= 0) { eqs.smoke.splice(i, 1); continue; }
+            const sa = (s.alpha * Math.min(1, s.life / 600) * clearFade).toFixed(3);
+            const grey = (55 + (1 - s.life / s.maxLife) * 75) | 0;
+            const sg = ctx!.createRadialGradient(s.x, s.y, 0, s.x, s.y, sr);
+            sg.addColorStop(0, `rgba(${grey},${grey},${grey},${sa})`);
+            sg.addColorStop(1, `rgba(${grey},${grey},${grey},0)`);
+            ctx!.beginPath();
+            ctx!.arc(s.x, s.y, sr, 0, Math.PI * 2);
+            ctx!.fillStyle = sg;
+            ctx!.fill();
+          }
+
+          // ── Debris — flies off-screen during off phase ────────────────────
+          for (let i = eqs.debris.length - 1; i >= 0; i--) {
+            const d = eqs.debris[i];
+            d.x += d.vx * dt * 0.001;
+            d.y += d.vy * dt * 0.001;
+            d.vy += 520 * dt * 0.001;
+            d.rot += d.rotV * dt * 0.001;
+            if (!isOff) d.life -= dt;
+            // Expire by life; always remove when off-screen
+            if (d.y > H + 60 || d.x < -100 || d.x > W + 100 || d.life <= 0) {
+              eqs.debris.splice(i, 1); continue;
+            }
+            const a = (Math.min(1, d.life / 400) * d.alpha * clearFade).toFixed(3);
+            ctx!.save();
+            ctx!.translate(d.x, d.y);
+            ctx!.rotate(d.rot);
+            ctx!.fillStyle = `rgba(130,108,82,${a})`;
+            ctx!.fillRect(-d.w / 2, -d.h / 2, d.w, d.h);
+            ctx!.restore();
+          }
+
         } else {
           // ── Snow / Rain ────────────────────────────────────────────────────
           for (let i = 0; i < ps.length; i++) {
@@ -1142,6 +1439,7 @@ export function LocationCard() {
         ctx!.restore();
       }
 
+      ctx!.restore(); // end global frame save (earthquake shake)
     }
 
     animId = requestAnimationFrame(frame);
