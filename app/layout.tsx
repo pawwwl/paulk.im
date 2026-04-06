@@ -33,7 +33,7 @@ export default function RootLayout({
     >
       <body>
         <DotPattern className="bg-background!" glowColor="#00e5ff" />
-        <div className="relative z-10 text-on-surface font-body selection:bg-primary selection:text-on-primary">
+        <div className="relative z-10 text-on-surface font-body selection:bg-primary selection:text-on-primary overflow-x-hidden">
           <CommandPalette />
           <div className="scanline pointer-events-none"></div>
 
