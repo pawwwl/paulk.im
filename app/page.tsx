@@ -18,18 +18,9 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-8">
               <h1 className="text-6xl md:text-8xl font-headline font-black leading-[0.9] tracking-tighter text-on-surface">
-                {"Hii, I'm "}
+                {"Hii I'm "}
                 <GlitchText speed={0.4}>Paul</GlitchText>
               </h1>
-            </div>
-            <div className="lg:col-span-4 pb-4">
-              <p className="text-lg text-on-surface-variant leading-relaxed font-mono">
-                <span className="text-2xl font-bold inline-flex items-center gap-2"></span>
-                Coding during the week{" "}
-                <span className="text-accent-pink italic">{`</>`}</span> <br />
-                Hiking on the weekends ⛰️ <br />
-                Red Rocks in the summer 🎸 <br />
-              </p>
             </div>
           </div>
         </section>
@@ -116,21 +107,19 @@ export default function Home() {
             {/* <!-- Location --> */}
             <LocationCard />
 
-
             {/* <!-- DVD Logo --> */}
             <DvdCornerEmoji />
 
             {/* <!-- Wavetick --> */}
             <WaveTick />
-
           </div>
         </section>
         <section>
           <div className="mb-20">
             <div className="flex items-center justify-between mb-10">
               <h2 className="text-5xl font-headline font-black tracking-tight uppercase text-on-surface">
-                What I'm{" "}
-                <span className="italic font-light text-primary">Doing</span>
+                Events{" "}
+                <span className="italic font-light text-primary">Calendar</span>
               </h2>
               <span className="h-[1px] bg-outline flex-grow mx-8 hidden md:block"></span>
             </div>

@@ -562,7 +562,7 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate, isActive = fal
   return (
     <div className="lg:flex lg:h-full">
       {/* Calendar grid */}
-      <div className="cal-border-glow shadow-sm ring-1 ring-black/5 lg:flex lg:flex-auto lg:flex-col dark:ring-white/5">
+      <div className="shadow-sm ring-1 ring-black/5 lg:flex lg:flex-auto lg:flex-col dark:ring-white/5">
         {/* Day of week headers */}
         <div className="grid grid-cols-7 gap-px border-b border-gray-300 bg-gray-200 text-center text-xs/6 font-semibold text-gray-700 lg:flex-none dark:border-white/5 dark:bg-white/15 dark:text-primary">
           {DOW.map((d) => (

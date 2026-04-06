@@ -480,11 +480,11 @@ export function TimelineSectionV2() {
       <div className="flex items-center mt-8">
         <div className="relative inline-flex">
           <button
-            className="relative px-8 py-3 font-mono text-xs tracking-widest border border-white/20 text-white/50 hover:text-white hover:border-white/50 transition-colors"
+            className="cal-border-glow relative px-8 py-3 font-mono text-xs tracking-widest border border-white/20 text-white/50 hover:text-white hover:border-white/50 transition-colors"
             onClick={advance}
           >
             {activeId === null
-              ? "Timeline →"
+              ? "start →"
               : activeId === N - 1
                 ? "close ×"
                 : "next →"}
