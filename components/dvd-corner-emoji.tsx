@@ -319,8 +319,7 @@ export function DvdCornerEmoji() {
       onTouchStart={handlePointerDown}
       onTouchMove={handlePointerMove}
       onTouchEnd={handlePointerUp}
-      className="relative bg-surface-container border border-outline overflow-hidden min-h-[250px] select-none cursor-crosshair"
-      style={{ backgroundColor: "oklch(0.18 0.02 260)" }}
+      className="relative border border-outline overflow-hidden min-h-[250px] select-none cursor-crosshair"
     >
       {/* background label */}
       <span className="absolute inset-0 flex items-center justify-center text-2xl font-bold tracking-widest uppercase pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.08)" }}>

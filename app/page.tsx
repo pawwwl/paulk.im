@@ -1,11 +1,8 @@
 import { Calendar } from "@/components/calendar";
 import { ChatWidget } from "@/components/chat-widget";
-// import { AirHockey } from "@/components/air-hockey";
 import { DvdCornerEmoji } from "@/components/dvd-corner-emoji";
-import { Game2048 } from "@/components/game-2048";
+import { WaveTick } from "@/components/wave-tick";
 import { LocationCard } from "@/components/location-card";
-import { TimelineSection } from "@/components/timeline";
-import { SKILLS } from "@/lib/data";
 import Image from "next/image";
 import { PixelImage } from "@/components/pixel-image";
 import { ProfileWave } from "@/components/profile-wave";
@@ -119,10 +116,13 @@ export default function Home() {
             {/* <!-- Location --> */}
             <LocationCard />
 
-            {/* <!-- Tron Game --> */}
-            <Game2048 />
+
             {/* <!-- DVD Logo --> */}
             <DvdCornerEmoji />
+
+            {/* <!-- Wavetick --> */}
+            <WaveTick />
+
           </div>
         </section>
         <section>
