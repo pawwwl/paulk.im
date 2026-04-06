@@ -19,7 +19,7 @@ export const TIME_LINE = [
     name: "US Army",
     role: "Combat Medic",
     description:
-      "Dropped out of school to try something new - bit off more than I could chew. Turned out to be some of the hardest but also rewarding years of my life.",
+      "Dropped out of school to try something new. Turned out to be some of the hardest but also rewarding years of my life.",
     date: "Feb 2013",
     dateTime: "2013-02",
   },
@@ -36,7 +36,7 @@ export const TIME_LINE = [
     name: "Fluid Truck",
     role: "Software Engineer",
     description:
-      "Second role, working with a bigger team. Eager to take on more responsibility and have bigger impact. Worked on the company platform powering fleet managers to track vehicles real-time. Implemented a variety of client-side map features, such as geofencing with google maps, telematics, and event tracking with Elastic Search. Collaborated with amazing people throughout the organization - product, designers, marketing, etc",
+      "Second role, working with a bigger team. Worked on the company platform powering fleet managers to track vehicles real-time. Implemented a variety of client-side map features, such as geofencing with google maps, telematics, and event tracking with Elastic Search.",
     date: "Mar 2020",
     dateTime: "2020-05",
     tools: ["Next.js", "ElasticSearch", "Google Maps"],
@@ -45,7 +45,7 @@ export const TIME_LINE = [
     name: "Audubon Companies",
     role: "Software Engineer",
     description:
-      "Current role with a small team but big company. First project - Tech Lead for a v2 rewrite of an inventory and report management app supporting pipeline inspectors. Most difficult component was integrating an offline-first mobile app in React Native used by field technicians. Next project - currently working on building an in-house solution for employee performance and talent assessment tracking. First time implementing event-sourcing architecture ",
+      "Current role with a small team but big company. First project - Tech Lead for a v2 rewrite of an inventory and report management app supporting pipeline inspectors. Next project - an in-house solution for employee performance and talent assessment tracking.",
     date: "Sep 2022",
     dateTime: "2022-09",
     tools: ["Next.js", "Mongo", "SQL Server", "Azure", "React Native"],

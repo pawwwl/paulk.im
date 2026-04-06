@@ -41,7 +41,7 @@ export default function Home() {
           <div className="lg:col-span-5 relative">
             <div className="group aspect-4/5 rounded-none border border-outline overflow-hidden shadow-[0_0_50px_rgba(0,229,255,0.05)] relative z-10">
               <PixelImage
-                src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/profile.png"
+                src="https://gwymehqkxnsurinrisdl.supabase.co/storage/v1/object/public/assets/profile-2.png"
                 grid="4x6"
                 className="w-full h-full"
               />
