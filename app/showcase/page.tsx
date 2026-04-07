@@ -1,58 +1,9 @@
-import { ThreeSceneLoader } from "./three-loader";
-import { CyberpunkTerminalLoader } from "./cyberpunk-terminal-loader";
-import { AsciiVideoLoader } from "./ascii-video-loader";
-import { LazySection } from "@/components/lazy-section";
-import { AirHockey } from "@/components/air-hockey";
+import { GodlyCanvas } from "@/components/godly";
 
-export default () => {
+export default function GodlyPage() {
   return (
-    <>
-      {/* <!-- TopNavBar from Components_8 --> */}
-      <main className="pt-24 pb-20">
-        {/* <!-- Hero Section --> */}
-        <section className="max-w-7xl mx-auto px-6 mb-24 flex flex-col gap-10">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="text-5xl font-headline font-black tracking-tight uppercase text-on-surface">
-              Show <span className="italic font-light text-primary">case</span>
-            </h2>
-            <span className="h-[1px] bg-outline flex-grow mx-8 hidden md:block"></span>
-          </div>
-
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 mb-4">
-              <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-              <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
-                system.run("helix_in_space")
-              </span>
-            </div>
-
-            <ThreeSceneLoader />
-          </div>
-
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 mb-4">
-              <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-              <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
-                system.run('ascii_camera')
-              </span>
-            </div>
-
-            <AsciiVideoLoader />
-          </div>
-
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 mb-4">
-              <span className="w-2 h-2 bg-[#5dff3b] animate-pulse"></span>
-              <span className="font-mono text-[12px] uppercase tracking-[0.2em] text-primary">
-                system.run("air_hockey")
-              </span>
-            </div>
-
-            <AirHockey />
-          </div>
-        </section>
-      </main>
-      {/* <!-- Footer from Components_8 --> */}
-    </>
+    <div className="w-screen h-screen overflow-hidden">
+      <GodlyCanvas />
+    </div>
   );
-};
+}
