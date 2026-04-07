@@ -249,6 +249,45 @@ body {
   z-index: 10;
 }
 
+/* ── Player Border Beam ── */
+
+@property --player-glow-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes player-border-spin {
+  to { --player-glow-angle: 360deg; }
+}
+
+.player-border-glow::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--player-glow-angle),
+    transparent 0%,
+    transparent 55%,
+    rgba(77, 150, 217, 0.2) 68%,
+    rgba(244, 160, 32, 0.6) 78%,
+    rgba(232, 93, 122, 0.9) 85%,
+    rgba(255, 255, 255, 0.95) 90%,
+    rgba(90, 173, 107, 0.85) 94%,
+    rgba(77, 150, 217, 0.2) 98%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
+  animation: player-border-spin 3s linear infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
 /* ── Calendar Month Init Animation ── */
 
 @keyframes profile-cell-out {
