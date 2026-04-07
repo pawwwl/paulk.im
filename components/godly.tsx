@@ -9,7 +9,7 @@ const GAP      = 16;
 const STRIDE_X = CELL_W + GAP;
 const STRIDE_Y = CELL_H + GAP;
 const RADIUS   = 8;
-const FRICTION  = 0.88;
+const FRICTION  = 0.92;
 
 // ── Albums to fetch from iTunes ───────────────────────────────────────────────
 const SEARCHES = [
@@ -515,8 +515,9 @@ export function GodlyCanvas() {
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragRef.current.moved = true;
       camRef.current.x -= dx;
       camRef.current.y -= dy;
-      velRef.current.x  = -dx;
-      velRef.current.y  = -dy;
+      // Rolling average so inertia on release is smooth, not a single noisy frame
+      velRef.current.x  = velRef.current.x * 0.6 + (-dx) * 0.4;
+      velRef.current.y  = velRef.current.y * 0.6 + (-dy) * 0.4;
       dragRef.current.lastX = e.clientX;
       dragRef.current.lastY = e.clientY;
     };
@@ -590,7 +591,7 @@ export function GodlyCanvas() {
       <canvas
         ref={canvasRef}
         className="w-full h-full block select-none"
-        style={{ cursor }}
+        style={{ cursor, touchAction: "none" }}
         data-playing={playingId}
       />
 
