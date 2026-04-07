@@ -326,7 +326,7 @@ function drawCell(
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export function GodlyCanvas() {
+export function GodlyMusic() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const camRef = useRef({ x: 0, y: 0 });
   const velRef = useRef({ x: 0, y: 0 });
@@ -703,6 +703,8 @@ export function GodlyCanvas() {
         return (
           <div
             className={playerPlaying ? "player-border-glow" : ""}
+            onWheel={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
             style={{
               position: "fixed",
               bottom: 16,

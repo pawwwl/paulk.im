@@ -387,3 +387,10 @@ body {
   0%   { opacity: 0; transform: scale(0.65) translateY(5px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
+
+/* ── Showcase Marquee Nav ── */
+
+@keyframes showcase-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
