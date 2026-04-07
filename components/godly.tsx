@@ -22,7 +22,7 @@ const SEARCHES = [
   "Bon Iver For Emma Forever Ago",
   "LCD Soundsystem Sound of Silver",
   "Aphex Twin Selected Ambient Works",
-  "Daft Punk Random Access Memories",
+  "Daft Punk",
   "SZA SOS",
   "Floating Points Promises",
   "Four Tet There Is Love in You",
@@ -49,9 +49,9 @@ const SEARCHES = [
   "Linkin Park Hybrid Theory",
   "Linkin Park Meteora",
   "Linkin Park Minutes to Midnight",
-  "Justice Cross",
-  "Justice Audio Video Disco",
-  "Justice Woman",
+  "Justice",
+  "Justice",
+  "Justice",
   "Sammy Virji Solid Ground",
   "SG Lewis Times",
   "SG Lewis AudioLust HigherLove",
@@ -75,74 +75,7 @@ const SEARCHES = [
   "TLC FanMail",
 ];
 
-// ── Tags (parallel to SEARCHES) ──────────────────────────────────────────────
-const TAGS: string[][] = [
-  ["hip-hop"],                  // Kendrick DAMN
-  ["r&b", "alternative"],       // Frank Ocean Blonde
-  ["hip-hop", "alternative"],   // Tyler Igor
-  ["rock", "alternative"],      // Radiohead OK Computer
-  ["hip-hop"],                  // Kanye MBDTF
-  ["rock", "classic"],          // Beatles Abbey Road
-  ["rock", "classic"],          // Pink Floyd DSOTM
-  ["electronic", "ambient"],    // Burial Untrue
-  ["electronic", "r&b"],        // James Blake
-  ["indie", "folk"],            // Bon Iver
-  ["electronic", "indie"],      // LCD Soundsystem
-  ["electronic", "ambient"],    // Aphex Twin
-  ["electronic", "dance"],      // Daft Punk RAM
-  ["r&b", "hip-hop"],           // SZA SOS
-  ["electronic", "jazz"],       // Floating Points
-  ["electronic", "ambient"],    // Four Tet
-  ["jazz", "r&b"],              // Thundercat
-  ["classical", "ambient"],     // Steve Reich
-  ["jazz", "classic"],          // Coltrane
-  ["jazz", "classic"],          // Miles Davis
-  ["indie", "folk"],            // Sufjan Stevens
-  ["indie", "electronic"],      // Animal Collective
-  ["electronic", "trip-hop"],   // Portishead
-  ["electronic", "trip-hop"],   // Massive Attack
-  ["electronic", "indie"],      // Caribou
-  ["electronic", "ambient"],    // Darkside
-  ["r&b", "indie"],             // Blood Orange
-  ["r&b", "soul"],              // Solange
-  ["hip-hop"],                  // Noname
-  ["hip-hop"],                  // Little Simz
-  ["electronic", "dance"],      // Lane 8 Little Voices
-  ["electronic", "dance"],      // Lane 8 Brightest Lights
-  ["electronic", "dance"],      // Lane 8 Rise
-  ["electronic", "dance"],      // Sultan + Shepard
-  ["electronic", "dance"],      // Chris Lake Black Book
-  ["electronic", "dance"],      // Chris Lake At War
-  ["rock"],                     // Linkin Park Hybrid Theory
-  ["rock"],                     // Linkin Park Meteora
-  ["rock"],                     // Linkin Park Minutes
-  ["electronic", "dance"],      // Justice Cross
-  ["electronic", "dance"],      // Justice AVD
-  ["electronic", "dance"],      // Justice Woman
-  ["electronic", "dance"],      // Sammy Virji
-  ["r&b", "electronic"],        // SG Lewis Times
-  ["r&b", "electronic"],        // SG Lewis AudioLust
-  ["electronic", "indie"],      // Elderbrook Cold
-  ["electronic", "indie"],      // Elderbrook Old Friend
-  ["r&b", "pop"],               // Weeknd After Hours
-  ["r&b", "pop"],               // Weeknd Starboy
-  ["r&b", "pop"],               // Weeknd Beauty
-  ["electronic", "ambient"],    // Emancipator Cold
-  ["electronic", "ambient"],    // Emancipator Cliffs
-  ["electronic", "ambient"],    // Loeffler Mare
-  ["electronic", "ambient"],    // Loeffler Graal
-  ["electronic", "indie"],      // ODESZA Moment Apart
-  ["electronic", "indie"],      // ODESZA In Return
-  ["electronic", "indie"],      // ODESZA Last Goodbye
-  ["r&b", "classic"],           // Aaliyah
-  ["r&b", "classic"],           // Aaliyah One in a Million
-  ["r&b", "classic"],           // Brandy Never Say Never
-  ["r&b", "classic"],           // Brandy Full Moon
-  ["r&b", "classic"],           // TLC CrazySexyCool
-  ["r&b", "classic"],           // TLC FanMail
-];
 
-const ALL_TAGS = Array.from(new Set(TAGS.flat())).sort();
 
 type Album = {
   artist: string;
@@ -151,7 +84,6 @@ type Album = {
   artUrl: string;
   previewUrl: string;
   grad: [string, string];
-  tags: string[];
 };
 
 const GRADS: [string, string][] = [
@@ -181,7 +113,6 @@ async function fetchAlbum(query: string, idx: number): Promise<Album | null> {
       artUrl:     r.artworkUrl100.replace("100x100bb", "600x600bb"),
       previewUrl: r.previewUrl ?? "",
       grad:       GRADS[idx % GRADS.length],
-      tags:       TAGS[idx] ?? [],
     };
   } catch {
     return null;
@@ -365,8 +296,14 @@ export function GodlyCanvas() {
   const [cursor, setCursor]       = useState<"grab" | "grabbing">("grab");
   const [loaded, setLoaded]       = useState(false);
   const [playingId, setPlayingId] = useState<number | null>(null);
-  const [activeTag, setActiveTag] = useState<string | null>(null);
-  const activeTagRef              = useRef<string | null>(null);
+
+  // ── Player state ────────────────────────────────────────────────────────────
+  const playlistRef               = useRef<number[]>([]); // album indices
+  const playlistPosRef            = useRef<number>(-1);
+  const [playerAlbumIdx, setPlayerAlbumIdx] = useState<number | null>(null);
+  const [playerPlaying, setPlayerPlaying]   = useState(false);
+  const [progress, setProgress]             = useState(0); // 0–1
+  const progressRafRef            = useRef<number>(0);
 
   useEffect(() => {
     Promise.all(SEARCHES.map(fetchAlbum)).then((albums) => {
@@ -382,32 +319,140 @@ export function GodlyCanvas() {
     });
   }, []);
 
-  // Play/stop helper
-  const playAlbum = (idx: number) => {
+  // ── Core play-by-album-index (used by canvas clicks + player) ──────────────
+  const playAlbumDirect = (idx: number, fromPlayer = false) => {
     const album = albumsRef.current[idx];
     if (!album?.previewUrl) return;
 
-    // Toggle off if same
-    if (playingIdx.current === idx) {
+    if (playingIdx.current === idx && !fromPlayer) {
+      // Toggle off from canvas click
       audioRef.current?.pause();
-      audioRef.current = null;
+      audioRef.current   = null;
       playingIdx.current = null;
       setPlayingId(null);
+      setPlayerPlaying(false);
+      cancelAnimationFrame(progressRafRef.current);
       return;
     }
 
-    // Stop previous
     audioRef.current?.pause();
+    cancelAnimationFrame(progressRafRef.current);
+
     const audio = new Audio(album.previewUrl);
     audio.volume = 0.7;
     audio.play().catch(() => {});
+
+    const tickProgress = () => {
+      if (!audio.duration) { progressRafRef.current = requestAnimationFrame(tickProgress); return; }
+      setProgress(audio.currentTime / audio.duration);
+      progressRafRef.current = requestAnimationFrame(tickProgress);
+    };
+    progressRafRef.current = requestAnimationFrame(tickProgress);
+
     audio.addEventListener("ended", () => {
-      playingIdx.current = null;
-      setPlayingId(null);
+      cancelAnimationFrame(progressRafRef.current);
+      // Auto-advance playlist
+      const pos  = playlistPosRef.current;
+      const list = playlistRef.current;
+      if (pos >= 0 && pos < list.length - 1) {
+        const nextPos = pos + 1;
+        playlistPosRef.current = nextPos;
+        playAlbumDirect(list[nextPos], true);
+        setPlayerAlbumIdx(list[nextPos]);
+      } else {
+        playingIdx.current = null;
+        setPlayingId(null);
+        setPlayerPlaying(false);
+        setProgress(0);
+      }
     });
-    audioRef.current  = audio;
+
+    audioRef.current   = audio;
     playingIdx.current = idx;
     setPlayingId(idx);
+    setPlayerPlaying(true);
+    setProgress(0);
+  };
+
+  const playAlbum = (idx: number) => playAlbumDirect(idx, false);
+
+  // ── Playlist controls ────────────────────────────────────────────────────────
+  const buildPlaylist = () => {
+    const albums = albumsRef.current;
+    const pool   = albums
+      .map((a, i) => ({ a, i }))
+      .filter(({ a }) => !!a);
+    // Fisher-Yates shuffle
+    const indices = pool.map(({ i }) => i);
+    for (let k = indices.length - 1; k > 0; k--) {
+      const j = Math.floor(Math.random() * (k + 1));
+      [indices[k], indices[j]] = [indices[j], indices[k]];
+    }
+    return indices;
+  };
+
+  const playerPlay = () => {
+    if (playerPlaying) {
+      audioRef.current?.pause();
+      cancelAnimationFrame(progressRafRef.current);
+      setPlayerPlaying(false);
+      return;
+    }
+    if (audioRef.current && playerAlbumIdx !== null) {
+      // Resume
+      audioRef.current.play().catch(() => {});
+      const audio = audioRef.current;
+      const tickProgress = () => {
+        if (!audio.duration) { progressRafRef.current = requestAnimationFrame(tickProgress); return; }
+        setProgress(audio.currentTime / audio.duration);
+        progressRafRef.current = requestAnimationFrame(tickProgress);
+      };
+      progressRafRef.current = requestAnimationFrame(tickProgress);
+      setPlayerPlaying(true);
+      return;
+    }
+    // Start fresh tracklist
+    const list = buildPlaylist();
+    if (!list.length) return;
+    playlistRef.current    = list;
+    playlistPosRef.current = 0;
+    setPlayerAlbumIdx(list[0]);
+    playAlbumDirect(list[0], true);
+  };
+
+  const playerPrev = () => {
+    const pos  = playlistPosRef.current;
+    const list = playlistRef.current;
+    if (pos <= 0) return;
+    const nextPos = pos - 1;
+    playlistPosRef.current = nextPos;
+    setPlayerAlbumIdx(list[nextPos]);
+    playAlbumDirect(list[nextPos], true);
+  };
+
+  const playerNext = () => {
+    let list = playlistRef.current;
+    let pos  = playlistPosRef.current;
+    if (!list.length) {
+      list = buildPlaylist();
+      if (!list.length) return;
+      playlistRef.current = list;
+      pos = -1;
+    }
+    if (pos >= list.length - 1) return;
+    const nextPos = pos + 1;
+    playlistPosRef.current = nextPos;
+    setPlayerAlbumIdx(list[nextPos]);
+    playAlbumDirect(list[nextPos], true);
+  };
+
+  const playerShuffle = () => {
+    const list = buildPlaylist();
+    if (!list.length) return;
+    playlistRef.current    = list;
+    playlistPosRef.current = 0;
+    setPlayerAlbumIdx(list[0]);
+    playAlbumDirect(list[0], true);
   };
 
   useEffect(() => {
@@ -469,19 +514,10 @@ export function GodlyCanvas() {
           const idx = (((col * 7 + row * 13) % N) + N) % N;
           const album = albums[idx];
           if (!album) continue;
-          const tag = activeTagRef.current;
-          const filtered = tag !== null && !album.tags.includes(tag);
           const img     = imgsRef.current[idx];
-          const hover   = !filtered && mx >= sx && mx <= sx + cw && my >= sy && my <= sy + cw;
+          const hover   = mx >= sx && mx <= sx + cw && my >= sy && my <= sy + cw;
           const playing = playingIdx.current === idx;
           drawCell(ctx, sx, sy, cw, album, img, hover, playing, now);
-          if (filtered) {
-            ctx.save();
-            roundRect(ctx, sx, sy, cw, cw, RADIUS);
-            ctx.fillStyle = "rgba(0,0,0,0.65)";
-            ctx.fill();
-            ctx.restore();
-          }
         }
       }
 
@@ -568,13 +604,6 @@ export function GodlyCanvas() {
   // Stop audio on unmount
   useEffect(() => () => { audioRef.current?.pause(); }, []);
 
-  const [filterOpen, setFilterOpen] = useState(false);
-
-  const toggleTag = (tag: string) => {
-    const next = activeTag === tag ? null : tag;
-    activeTagRef.current = next;
-    setActiveTag(next);
-  };
 
   return (
     <div className="relative w-full h-full" style={{ backgroundColor: "#080808" }}>
@@ -585,107 +614,94 @@ export function GodlyCanvas() {
         data-playing={playingId}
       />
 
-      {/* Shuffle button */}
-      <button
-        onClick={() => {
-          const albums = albumsRef.current.filter(Boolean);
-          if (!albums.length) return;
-          const pool = activeTag
-            ? albumsRef.current.map((a, i) => ({ a, i })).filter(({ a }) => a?.tags.includes(activeTag))
-            : albumsRef.current.map((a, i) => ({ a, i }));
-          if (!pool.length) return;
-          const { i } = pool[Math.floor(Math.random() * pool.length)];
-          playAlbum(i);
-        }}
-        className="fixed bottom-6 right-20 w-11 h-11 flex items-center justify-center transition-all duration-200"
-        style={{
-          border: "1px solid rgba(255,255,255,0.25)",
-          backgroundColor: "rgba(0,0,0,0.7)",
-          backdropFilter: "blur(10px)",
-          color: "rgba(255,255,255,0.85)",
-        }}
-        title="Shuffle"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M1 4h2.5a4 4 0 0 1 3.2 1.6L8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          <path d="M1 12h2.5a4 4 0 0 0 3.2-1.6l3.6-4.8A4 4 0 0 1 13.5 4H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          <path d="M8 9l1.3 1.4A4 4 0 0 0 12.5 12H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          <polyline points="13,2 15,4 13,6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <polyline points="13,10 15,12 13,14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
+      {/* ── Audio player ──────────────────────────────────────────────────── */}
+      {(() => {
+        const album = playerAlbumIdx !== null ? albumsRef.current[playerAlbumIdx] : null;
+        return (
+          <div
+            className={playerPlaying ? "player-border-glow" : ""}
+            style={{
+              position: "fixed",
+              bottom: 16,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 360,
+            }}
+          >
+          <div
+            className="flex items-center gap-3 px-4 py-3 w-full"
+            style={{
+              backgroundColor: "rgba(8,8,8,0.88)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            {/* Album art */}
+            <div className="w-9 h-9 flex-shrink-0 overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+              {album && playerAlbumIdx !== null && imgsRef.current[playerAlbumIdx]?.src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={imgsRef.current[playerAlbumIdx]!.src} alt={album.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full" style={{ background: "rgba(255,255,255,0.04)" }} />
+              )}
+            </div>
 
-      {/* Filter button */}
-      <button
-        onClick={() => setFilterOpen((o) => !o)}
-        className="fixed bottom-6 right-6 w-11 h-11 flex items-center justify-center transition-all duration-200"
-        style={{
-          border: `1px solid ${filterOpen ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)"}`,
-          backgroundColor: filterOpen ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.7)",
-          backdropFilter: "blur(10px)",
-          color: "rgba(255,255,255,0.85)",
-        }}
-        title="Filter by genre"
-      >
-        {/* Filter icon */}
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <line x1="2" y1="4"  x2="14" y2="4"  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="4" y1="8"  x2="12" y2="8"  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="6" y1="12" x2="10" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
-        {activeTag && (
-          <span
-            className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
-            style={{ backgroundColor: "#E85D7A" }}
-          />
-        )}
-      </button>
-
-      {/* Filter dial */}
-      {filterOpen && (
-        <div
-          className="fixed bottom-20 right-6 p-4 flex flex-col gap-2"
-          style={{
-            backgroundColor: "rgba(8,8,8,0.82)",
-            backdropFilter: "blur(16px)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            minWidth: 160,
-          }}
-        >
-          <p className="font-mono text-[9px] tracking-[0.2em] uppercase mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>
-            Genre
-          </p>
-          {ALL_TAGS.map((tag) => {
-            const active = activeTag === tag;
-            return (
-              <button
-                key={tag}
-                onClick={() => toggleTag(tag)}
-                className="flex items-center gap-2 font-mono text-[11px] tracking-widest uppercase text-left transition-all duration-150 px-2 py-1"
-                style={{
-                  color: active ? "#fff" : "rgba(255,255,255,0.5)",
-                  backgroundColor: active ? "rgba(255,255,255,0.08)" : "transparent",
+            {/* Track info + progress */}
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+              <p className="font-mono text-[10px] text-white truncate leading-none">
+                {album ? `${album.artist} — ${album.title}` : "press play to shuffle"}
+              </p>
+              {/* Progress bar */}
+              <div
+                className="w-full h-0.5 cursor-pointer"
+                style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+                onClick={(e) => {
+                  const audio = audioRef.current;
+                  if (!audio || !audio.duration) return;
+                  const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                  audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
                 }}
               >
-                <span
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all duration-150"
-                  style={{ backgroundColor: active ? "#fff" : "rgba(255,255,255,0.2)" }}
+                <div
+                  className="h-full transition-none"
+                  style={{ width: `${progress * 100}%`, backgroundColor: "#4D96D9" }}
                 />
-                {tag}
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-1">
+              {/* Prev */}
+              <button onClick={playerPrev} className="w-7 h-7 flex items-center justify-center" style={{ color: "rgba(255,255,255,0.5)" }} title="Previous">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><polygon points="11,1 4,6 11,11"/><rect x="1" y="1" width="2" height="10"/></svg>
               </button>
-            );
-          })}
-          {activeTag && (
-            <button
-              onClick={() => { activeTagRef.current = null; setActiveTag(null); }}
-              className="mt-1 font-mono text-[9px] tracking-widest uppercase transition-colors duration-150"
-              style={{ color: "#E85D7A", textAlign: "left", paddingLeft: 8 }}
-            >
-              clear ×
-            </button>
-          )}
-        </div>
-      )}
+              {/* Play/Pause */}
+              <button onClick={playerPlay} className="w-8 h-8 flex items-center justify-center" style={{ color: "#fff", border: "1px solid rgba(255,255,255,0.2)" }} title={playerPlaying ? "Pause" : "Play"}>
+                {playerPlaying
+                  ? <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><rect x="0" y="0" width="3.5" height="12"/><rect x="6.5" y="0" width="3.5" height="12"/></svg>
+                  : <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 10,6 0,12"/></svg>
+                }
+              </button>
+              {/* Next */}
+              <button onClick={playerNext} className="w-7 h-7 flex items-center justify-center" style={{ color: "rgba(255,255,255,0.5)" }} title="Next">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><polygon points="1,1 8,6 1,11"/><rect x="9" y="1" width="2" height="10"/></svg>
+              </button>
+              {/* Shuffle */}
+              <button onClick={playerShuffle} className="w-7 h-7 flex items-center justify-center" style={{ color: "rgba(255,255,255,0.4)" }} title="Shuffle new list">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                  <path d="M1 4h2.5a4 4 0 0 1 3.2 1.6L8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M1 12h2.5a4 4 0 0 0 3.2-1.6l3.6-4.8A4 4 0 0 1 13.5 4H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M8 9l1.3 1.4A4 4 0 0 0 12.5 12H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <polyline points="13,2 15,4 13,6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polyline points="13,10 15,12 13,14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
