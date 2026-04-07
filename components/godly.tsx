@@ -3,11 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const CELL_W   = 200;
-const CELL_H   = 200;
-const GAP      = 16;
-const STRIDE_X = CELL_W + GAP;
-const STRIDE_Y = CELL_H + GAP;
+const GAP = 12;
+function cellSize() { return window.innerWidth < 640 ? 120 : 200; }
 const RADIUS   = 8;
 const FRICTION  = 0.92;
 
@@ -214,11 +211,11 @@ const WAVE_COLORS = ["#4D96D9", "#F4A020", "#E85D7A", "#5AAD6B"];
 function drawWaveBorder(
   ctx: CanvasRenderingContext2D,
   x: number, y: number,
+  cw: number,
   now: number,
 ) {
   const t         = now * 0.001;
-  const w         = CELL_W;
-  const h         = CELL_H;
+  const w = cw, h = cw;
   const perimeter = 2 * (w + h);
   const steps     = 240;
   const amp       = 3;
@@ -227,7 +224,6 @@ function drawWaveBorder(
   const cx        = x + w / 2;
   const cy        = y + h / 2;
 
-  // Build point list
   const pts: [number, number][] = [];
   for (let i = 0; i <= steps; i++) {
     const progress = i / steps;
@@ -235,23 +231,20 @@ function drawWaveBorder(
     const wave     = amp * Math.sin(freq * progress * Math.PI * 2 - t * speed);
     let px: number, py: number, nx: number, ny: number;
     if (dist < w) {
-      px = x + dist;           py = y;     nx = 0;  ny = -1;
+      px = x + dist; py = y; nx = 0; ny = -1;
     } else if (dist < w + h) {
-      px = x + w;              py = y + (dist - w);          nx = 1;  ny = 0;
+      px = x + w; py = y + (dist - w); nx = 1; ny = 0;
     } else if (dist < 2 * w + h) {
-      px = x + w - (dist - w - h); py = y + h;               nx = 0;  ny = 1;
+      px = x + w - (dist - w - h); py = y + h; nx = 0; ny = 1;
     } else {
-      px = x;                  py = y + h - (dist - 2 * w - h); nx = -1; ny = 0;
+      px = x; py = y + h - (dist - 2 * w - h); nx = -1; ny = 0;
     }
     pts.push([px + nx * wave, py + ny * wave]);
   }
 
-  // Conic gradient — rotates with time so color cycles around the border
   const conicAngle = (t * 0.4) % (Math.PI * 2);
   const grad = ctx.createConicGradient(conicAngle, cx, cy);
-  WAVE_COLORS.forEach((c, i) => {
-    grad.addColorStop(i / WAVE_COLORS.length, c + "bb"); // ~73% opacity
-  });
+  WAVE_COLORS.forEach((c, i) => { grad.addColorStop(i / WAVE_COLORS.length, c + "bb"); });
   grad.addColorStop(1, WAVE_COLORS[0] + "bb");
 
   ctx.save();
@@ -269,16 +262,16 @@ function drawWaveBorder(
 function drawPlayingEffects(
   ctx: CanvasRenderingContext2D,
   x: number, y: number,
+  cw: number,
   now: number,
 ) {
   const t     = now * 0.001;
-  const cx    = x + CELL_W / 2;
-  const cy    = y + CELL_H / 2;
-  const reach = Math.hypot(CELL_W, CELL_H);
+  const cx    = x + cw / 2;
+  const cy    = y + cw / 2;
+  const reach = Math.hypot(cw, cw);
 
-  // ── Rotating beam (gradient-tinted) ───────────────────────────────────────
   ctx.save();
-  roundRect(ctx, x, y, CELL_W, CELL_H, RADIUS);
+  roundRect(ctx, x, y, cw, cw, RADIUS);
   ctx.clip();
   const angle  = (t * 1.2) % (Math.PI * 2);
   const spread = Math.PI / 5;
@@ -288,19 +281,19 @@ function drawPlayingEffects(
   ctx.closePath();
   const colorIdx = Math.floor((t * 0.4 / (Math.PI * 2)) * WAVE_COLORS.length) % WAVE_COLORS.length;
   const beam = ctx.createLinearGradient(cx, cy, cx + Math.cos(angle) * reach, cy + Math.sin(angle) * reach);
-  beam.addColorStop(0, WAVE_COLORS[colorIdx] + "30"); // very subtle
+  beam.addColorStop(0, WAVE_COLORS[colorIdx] + "30");
   beam.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = beam;
   ctx.fill();
   ctx.restore();
 
-  // ── Sine wave border ──────────────────────────────────────────────────────
-  drawWaveBorder(ctx, x, y, now);
+  drawWaveBorder(ctx, x, y, cw, now);
 }
 
 function drawCell(
   ctx: CanvasRenderingContext2D,
   x: number, y: number,
+  cw: number,
   album: Album,
   img: HTMLImageElement | null,
   hover: boolean,
@@ -308,56 +301,49 @@ function drawCell(
   now: number,
 ) {
   ctx.save();
-  roundRect(ctx, x, y, CELL_W, CELL_H, RADIUS);
+  roundRect(ctx, x, y, cw, cw, RADIUS);
   ctx.clip();
 
   if (img && img.complete && img.naturalWidth > 0) {
-    ctx.drawImage(img, x, y, CELL_W, CELL_H);
+    ctx.drawImage(img, x, y, cw, cw);
   } else {
-    const g = ctx.createLinearGradient(x, y, x + CELL_W, y + CELL_H);
+    const g = ctx.createLinearGradient(x, y, x + cw, y + cw);
     g.addColorStop(0, album.grad[0]);
     g.addColorStop(1, album.grad[1]);
     ctx.fillStyle = g;
-    ctx.fillRect(x, y, CELL_W, CELL_H);
+    ctx.fillRect(x, y, cw, cw);
   }
 
   if (hover || playing) {
     ctx.fillStyle = playing ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.72)";
-    ctx.fillRect(x, y, CELL_W, CELL_H);
+    ctx.fillRect(x, y, cw, cw);
 
-    // Play/pause icon
-    const iconY = y + CELL_H / 2 - 30;
     ctx.fillStyle = "rgba(255,255,255,0.9)";
     ctx.font = "22px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(playing ? "⏸" : "▶", x + CELL_W / 2, iconY);
+    ctx.fillText(playing ? "⏸" : "▶", x + cw / 2, y + cw / 2 - 28);
 
-    // Artist
-    ctx.font = "600 12px monospace";
+    ctx.font = "600 11px monospace";
     ctx.fillStyle = "#ffffff";
-    ctx.textBaseline = "middle";
-    ctx.fillText(album.artist, x + CELL_W / 2, y + CELL_H / 2);
+    ctx.fillText(album.artist, x + cw / 2, y + cw / 2);
 
-    // Title
-    ctx.font = "400 10px monospace";
-    ctx.fillStyle = "rgba(255,255,255,0.6)";
-    const title = album.title.length > 28 ? album.title.slice(0, 26) + "…" : album.title;
-    ctx.fillText(title, x + CELL_W / 2, y + CELL_H / 2 + 16);
-
-    // Year
     ctx.font = "400 9px monospace";
+    ctx.fillStyle = "rgba(255,255,255,0.6)";
+    const title = album.title.length > 24 ? album.title.slice(0, 22) + "…" : album.title;
+    ctx.fillText(title, x + cw / 2, y + cw / 2 + 14);
+
+    ctx.font = "400 8px monospace";
     ctx.fillStyle = "rgba(255,255,255,0.35)";
-    ctx.fillText(album.year, x + CELL_W / 2, y + CELL_H / 2 + 30);
+    ctx.fillText(album.year, x + cw / 2, y + cw / 2 + 26);
   }
 
   ctx.restore();
 
   if (playing) {
-    drawPlayingEffects(ctx, x, y, now);
+    drawPlayingEffects(ctx, x, y, cw, now);
   } else {
-    // Static border
-    roundRect(ctx, x, y, CELL_W, CELL_H, RADIUS);
+    roundRect(ctx, x, y, cw, cw, RADIUS);
     ctx.strokeStyle = hover ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.05)";
     ctx.lineWidth = 1;
     ctx.stroke();
@@ -465,31 +451,33 @@ export function GodlyCanvas() {
         return;
       }
 
+      const cw     = cellSize();
+      const stride = cw + GAP;
       const cam = camRef.current;
       const mx  = mouseRef.current.x;
       const my  = mouseRef.current.y;
 
-      const col0 = Math.floor(cam.x / STRIDE_X) - 1;
-      const col1 = Math.ceil((cam.x + W) / STRIDE_X) + 1;
-      const row0 = Math.floor(cam.y / STRIDE_Y) - 1;
-      const row1 = Math.ceil((cam.y + H) / STRIDE_Y) + 1;
+      const col0 = Math.floor(cam.x / stride) - 1;
+      const col1 = Math.ceil((cam.x + W) / stride) + 1;
+      const row0 = Math.floor(cam.y / stride) - 1;
+      const row1 = Math.ceil((cam.y + H) / stride) + 1;
 
       for (let row = row0; row <= row1; row++) {
         for (let col = col0; col <= col1; col++) {
-          const sx = col * STRIDE_X - cam.x;
-          const sy = row * STRIDE_Y - cam.y;
+          const sx = col * stride - cam.x;
+          const sy = row * stride - cam.y;
           const idx = (((col * 7 + row * 13) % N) + N) % N;
           const album = albums[idx];
           if (!album) continue;
           const tag = activeTagRef.current;
           const filtered = tag !== null && !album.tags.includes(tag);
           const img     = imgsRef.current[idx];
-          const hover   = !filtered && mx >= sx && mx <= sx + CELL_W && my >= sy && my <= sy + CELL_H;
+          const hover   = !filtered && mx >= sx && mx <= sx + cw && my >= sy && my <= sy + cw;
           const playing = playingIdx.current === idx;
-          drawCell(ctx, sx, sy, album, img, hover, playing, now);
+          drawCell(ctx, sx, sy, cw, album, img, hover, playing, now);
           if (filtered) {
             ctx.save();
-            roundRect(ctx, sx, sy, CELL_W, CELL_H, RADIUS);
+            roundRect(ctx, sx, sy, cw, cw, RADIUS);
             ctx.fillStyle = "rgba(0,0,0,0.65)";
             ctx.fill();
             ctx.restore();
@@ -535,12 +523,14 @@ export function GodlyCanvas() {
         const albums = albumsRef.current;
         const N = albums.length;
         if (N === 0) return;
-        const cam = camRef.current;
-        const col = Math.floor((cx + cam.x) / STRIDE_X);
-        const row = Math.floor((cy + cam.y) / STRIDE_Y);
-        const sx  = col * STRIDE_X - cam.x;
-        const sy  = row * STRIDE_Y - cam.y;
-        if (cx >= sx && cx <= sx + CELL_W && cy >= sy && cy <= sy + CELL_H) {
+        const cam    = camRef.current;
+        const cw     = cellSize();
+        const stride = cw + GAP;
+        const col = Math.floor((cx + cam.x) / stride);
+        const row = Math.floor((cy + cam.y) / stride);
+        const sx  = col * stride - cam.x;
+        const sy  = row * stride - cam.y;
+        if (cx >= sx && cx <= sx + cw && cy >= sy && cy <= sy + cw) {
           const idx = (((col * 7 + row * 13) % N) + N) % N;
           playAlbum(idx);
         }
