@@ -1,0 +1,309 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+// ── 5×7 pixel font ─────────────────────────────────────────────────────────────
+
+const GLYPHS: Record<string, number[]> = {
+  " ": [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000],
+  A: [0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
+  B: [0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110],
+  C: [0b01111, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b01111],
+  D: [0b11110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b11110],
+  E: [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111],
+  F: [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b10000],
+  G: [0b01111, 0b10000, 0b10000, 0b10011, 0b10001, 0b10001, 0b01111],
+  H: [0b10001, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
+  I: [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b11111],
+  J: [0b00111, 0b00010, 0b00010, 0b00010, 0b00010, 0b10010, 0b01100],
+  K: [0b10001, 0b10010, 0b10100, 0b11000, 0b10100, 0b10010, 0b10001],
+  L: [0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111],
+  M: [0b10001, 0b11011, 0b10101, 0b10001, 0b10001, 0b10001, 0b10001],
+  N: [0b10001, 0b11001, 0b10101, 0b10011, 0b10001, 0b10001, 0b10001],
+  O: [0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
+  P: [0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000],
+  Q: [0b01110, 0b10001, 0b10001, 0b10001, 0b10101, 0b10010, 0b01101],
+  R: [0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001],
+  S: [0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110],
+  T: [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100],
+  U: [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
+  V: [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01010, 0b00100],
+  W: [0b10001, 0b10001, 0b10001, 0b10101, 0b10101, 0b11011, 0b10001],
+  X: [0b10001, 0b10001, 0b01010, 0b00100, 0b01010, 0b10001, 0b10001],
+  Y: [0b10001, 0b10001, 0b01010, 0b00100, 0b00100, 0b00100, 0b00100],
+  Z: [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b10000, 0b11111],
+  "0": [0b01110, 0b10001, 0b10011, 0b10101, 0b11001, 0b10001, 0b01110],
+  "1": [0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110],
+  "2": [0b01110, 0b10001, 0b00001, 0b00110, 0b01000, 0b10000, 0b11111],
+  "3": [0b11110, 0b00001, 0b00001, 0b01110, 0b00001, 0b00001, 0b11110],
+  "4": [0b00010, 0b00110, 0b01010, 0b10010, 0b11111, 0b00010, 0b00010],
+  "5": [0b11111, 0b10000, 0b10000, 0b11110, 0b00001, 0b00001, 0b11110],
+  "6": [0b01110, 0b10000, 0b10000, 0b11110, 0b10001, 0b10001, 0b01110],
+  "7": [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b01000, 0b01000],
+  "8": [0b01110, 0b10001, 0b10001, 0b01110, 0b10001, 0b10001, 0b01110],
+  "9": [0b01110, 0b10001, 0b10001, 0b01111, 0b00001, 0b00001, 0b01110],
+  ".": [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00100],
+  "!": [0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00000, 0b00100],
+  "?": [0b01110, 0b10001, 0b00001, 0b00110, 0b00100, 0b00000, 0b00100],
+  "-": [0b00000, 0b00000, 0b00000, 0b11111, 0b00000, 0b00000, 0b00000],
+  "'": [0b00100, 0b00100, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000],
+  ",": [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00110, 0b00100],
+};
+
+// ── Grid constants ─────────────────────────────────────────────────────────────
+
+const CHAR_W = 5;
+const CHAR_H = 7;
+const CHAR_GAP = 1; // cols between chars
+const LINE_GAP = 3; // rows between lines
+const PAD_COL = 4;  // cols left/right of text block
+
+const COLS = 124;
+const ROWS = 66;
+const VBW = COLS * 2 - 1; // 247
+const VBH = ROWS * 2 - 1; // 131
+
+const CHARS_PER_LINE = Math.floor((COLS - PAD_COL * 2) / (CHAR_W + CHAR_GAP)); // ~19
+
+// ── Text → lit dots ───────────────────────────────────────────────────────────
+
+function wordWrap(text: string, maxLen: number): string[] {
+  const words = text.split(" ").filter(Boolean);
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (candidate.length <= maxLen) {
+      line = candidate;
+    } else {
+      if (line) lines.push(line);
+      // break long words
+      let w = word;
+      while (w.length > maxLen) {
+        lines.push(w.slice(0, maxLen));
+        w = w.slice(maxLen);
+      }
+      line = w;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function computeLitDots(text: string): Set<number> {
+  const upper = text.toUpperCase().replace(/[^A-Z0-9 !?.,'"\-]/g, "");
+  const lines = wordWrap(upper, CHARS_PER_LINE);
+  const MAX_LINES = Math.floor((ROWS - 6) / (CHAR_H + LINE_GAP));
+  const display = lines.slice(-MAX_LINES);
+
+  const lineH = CHAR_H + LINE_GAP;
+  const blockH = display.length * lineH - LINE_GAP;
+  const startRow = Math.round((ROWS - blockH) / 2);
+  const startCol = PAD_COL;
+
+  const lit = new Set<number>();
+  display.forEach((line, li) => {
+    line.split("").forEach((ch, ci) => {
+      const glyph = GLYPHS[ch] ?? GLYPHS[" "];
+      const col0 = startCol + ci * (CHAR_W + CHAR_GAP);
+      glyph.forEach((bits, r) => {
+        for (let b = 0; b < CHAR_W; b++) {
+          if (bits & (1 << (CHAR_W - 1 - b))) {
+            const dr = startRow + li * lineH + r;
+            const dc = col0 + b;
+            if (dr >= 0 && dr < ROWS && dc >= 0 && dc < COLS) {
+              lit.add(dr * COLS + dc);
+            }
+          }
+        }
+      });
+    });
+  });
+  return lit;
+}
+
+// ── Speech recognition types ──────────────────────────────────────────────────
+
+interface SREvent {
+  results: { length: number; [i: number]: { isFinal: boolean; [j: number]: { transcript: string } } };
+  resultIndex: number;
+}
+interface SR {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((e: SREvent) => void) | null;
+  onerror: ((e: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+function createSR(): SR | null {
+  if (typeof window === "undefined") return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Ctor = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+  if (!Ctor) return null;
+  const sr: SR = new Ctor();
+  sr.continuous = true;
+  sr.interimResults = true;
+  sr.lang = "en-US";
+  return sr;
+}
+
+// ── Dot grid ───────────────────────────────────────────────────────────────────
+
+function DotGrid({ litDots, litColor }: { litDots: Set<number>; litColor: string }) {
+  return (
+    <svg
+      viewBox={`0 0 ${VBW} ${VBH}`}
+      className="w-full h-full"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden
+    >
+      {Array.from({ length: ROWS * COLS }, (_, idx) => {
+        const on = litDots.has(idx);
+        const c = idx % COLS;
+        const r = (idx - c) / COLS;
+        return (
+          <circle
+            key={idx}
+            cx={c * 2 + 0.25}
+            cy={r * 2 + 0.25}
+            r={0.25}
+            fill={on ? litColor : "#161616"}
+            style={on ? { transition: "fill 200ms ease" } : undefined}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
+export function Speech2Led() {
+  const [finalText, setFinalText] = useState("");
+  const [interim, setInterim] = useState("");
+  const [listening, setListening] = useState(false);
+  const [supported, setSupported] = useState(true);
+  const srRef = useRef<SR | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ok = !!(((window as any).SpeechRecognition) || ((window as any).webkitSpeechRecognition));
+    setSupported(ok);
+  }, []);
+
+  const displayText = (finalText + (interim ? " " + interim : "")).trim() || "SAY SOMETHING";
+
+  const litDots = useMemo(() => computeLitDots(displayText), [displayText]);
+  const litColor = listening ? "#5dff3b" : "#00e5ff";
+
+  const stop = useCallback(() => {
+    srRef.current?.stop();
+    srRef.current = null;
+    setListening(false);
+    setInterim("");
+  }, []);
+
+  const start = useCallback(() => {
+    const sr = createSR();
+    if (!sr) return;
+    srRef.current = sr;
+    setFinalText("");
+    setInterim("");
+
+    sr.onresult = (e: SREvent) => {
+      let interimBuf = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const res = e.results[i];
+        if (res.isFinal) {
+          setFinalText((prev) => (prev + " " + res[0].transcript).trimStart());
+        } else {
+          interimBuf += res[0].transcript;
+        }
+      }
+      setInterim(interimBuf);
+    };
+
+    sr.onerror = (e) => {
+      if (e.error !== "no-speech") {
+        setListening(false);
+        setInterim("");
+      }
+    };
+
+    sr.onend = () => {
+      setListening(false);
+      setInterim("");
+    };
+
+    sr.start();
+    setListening(true);
+  }, []);
+
+  const toggle = useCallback(() => {
+    if (listening) stop();
+    else start();
+  }, [listening, start, stop]);
+
+  return (
+    <div
+      className="relative w-full h-full overflow-hidden"
+      style={{ background: "#0a0a0a" }}
+    >
+      {/* Full-screen dot grid */}
+      <DotGrid litDots={litDots} litColor={litColor} />
+
+      {/* Mic button */}
+      {supported && (
+        <div className="absolute inset-x-0 bottom-8 flex flex-col items-center gap-3 pointer-events-none">
+          <button
+            onClick={toggle}
+            className="pointer-events-auto relative flex items-center justify-center size-14 rounded-full cursor-pointer transition-all duration-200"
+            style={{
+              background: listening ? "rgba(93,255,59,0.1)" : "rgba(255,255,255,0.05)",
+              border: `1px solid ${listening ? "rgba(93,255,59,0.4)" : "rgba(255,255,255,0.1)"}`,
+              boxShadow: listening ? "0 0 20px rgba(93,255,59,0.15)" : "none",
+            }}
+          >
+            {listening && (
+              <span
+                className="absolute inset-0 rounded-full animate-ping"
+                style={{ background: "rgba(93,255,59,0.12)", animationDuration: "1.4s" }}
+              />
+            )}
+            {listening ? (
+              <svg width="16" height="16" viewBox="0 0 16 16">
+                <rect x="3" y="3" width="10" height="10" rx="2" fill="rgba(93,255,59,0.9)" />
+              </svg>
+            ) : (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 18 18"
+                fill="none"
+                stroke="rgba(255,255,255,0.5)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              >
+                <rect x="6.5" y="1" width="5" height="8" rx="2.5" />
+                <path d="M3 9a6 6 0 0 0 12 0" />
+                <line x1="9" y1="15" x2="9" y2="17" />
+                <line x1="6" y1="17" x2="12" y2="17" />
+              </svg>
+            )}
+          </button>
+
+          <span
+            className="pointer-events-none font-mono text-[9px] uppercase tracking-[0.3em]"
+            style={{ color: listening ? "rgba(93,255,59,0.5)" : "rgba(255,255,255,0.15)" }}
+          >
+            {listening ? "listening" : "tap to speak"}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}

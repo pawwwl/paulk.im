@@ -12,7 +12,7 @@ import { TimelineSectionV2 } from "@/components/timeline/index.v2";
 export default function Home() {
   return (
     <>
-      <main className="relative pt-32 pb-20 px-6 max-w-7xl mx-auto">
+      {/* <main className="relative pt-32 pb-20 px-6 max-w-7xl mx-auto"> */}
         {/* <!-- Hero Section: Terminal Header --> */}
         <section className="mb-16">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -128,7 +128,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-      </main>
+      {/* </main> */}
     </>
   );
 }

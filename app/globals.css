@@ -9,7 +9,14 @@
   --foreground: #171717;
 }
 
+@keyframes led {
+  0%, 100% { opacity: 1; }
+  45%, 55% { opacity: 0.08; }
+}
+
 @theme {
+  --animate-led: led 2s ease-in-out infinite;
+
   /* Colors */
   --color-primary: #00e5ff;
   --color-on-primary: #000000;
