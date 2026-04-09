@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   GodlyMusic,
@@ -475,7 +475,7 @@ function ViewModal({
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function ShowcasePage() {
+function ShowcaseContent() {
   const router = useRouter();
   const params = useSearchParams();
   const activeId = params.get("view");
@@ -581,5 +581,13 @@ export default function ShowcasePage() {
         />
       )}
     </>
+  );
+}
+
+export default function ShowcasePage() {
+  return (
+    <Suspense>
+      <ShowcaseContent />
+    </Suspense>
   );
 }
