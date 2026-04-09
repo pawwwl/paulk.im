@@ -320,7 +320,7 @@ export function TimelineSectionV2() {
   // ── Prev / Next / node click ────────────────────────────────────────────────
   const goTo = (idx: number) => {
     targetIdRef.current = idx;
-    animateToAngle(270 - (idx / N) * 360);
+    animateToAngle(90 - (idx / N) * 360);
     setAutoRotate(false);
     startTransition(() => setActiveId(idx));
   };
@@ -484,7 +484,7 @@ export function TimelineSectionV2() {
             onClick={advance}
           >
             {activeId === null
-              ? "start →"
+              ? "Click Me →"
               : activeId === N - 1
                 ? "close ×"
                 : "next →"}
