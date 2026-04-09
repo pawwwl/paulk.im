@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   GodlyMusic,
   GodlyClips,
@@ -331,6 +332,20 @@ function ViewModal({
   onSwitch: (id: string) => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  // Curtain: separate "shown" view from the incoming view so we can swap
+  // under the curtain while it's opaque, then reveal.
+  const [shownView, setShownView] = useState(view);
+  const [curtainKey, setCurtainKey] = useState(0);
+  const pendingRef = useRef(view);
+
+  useEffect(() => {
+    if (view.id === shownView.id) return;
+    pendingRef.current = view;
+    setCurtainKey((k) => k + 1);
+    // Swap the displayed view at the midpoint of the curtain sweep (~130ms in)
+    const t = setTimeout(() => setShownView(pendingRef.current), 130);
+    return () => clearTimeout(t);
+  }, [view.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -398,9 +413,9 @@ function ViewModal({
 
         {/* Right fade + close */}
         <div
-          className="absolute right-0 top-0 h-full flex items-center pr-5 z-10"
+          className="absolute right-0 top-0 h-full flex items-center justify-end pr-5 z-10 w-32"
           style={{
-            background: "linear-gradient(to left, #0e0e0e 70%, transparent)",
+            background: "linear-gradient(to left, #0e0e0e 60%, transparent)",
           }}
         >
           <button
@@ -442,7 +457,18 @@ function ViewModal({
       </div>
 
       {/* View content */}
-      <div className="flex-1 overflow-hidden">{view.component}</div>
+      <div className="flex-1 overflow-hidden">{shownView.component}</div>
+
+      {/* Scan curtain — fixed overlay that sweeps down then off, hiding the swap */}
+      <div
+        key={curtainKey}
+        className="pointer-events-none fixed inset-0"
+        style={{
+          zIndex: 65,
+          background: "#0e0e0e",
+          animation: "view-curtain 300ms ease-in-out both",
+        }}
+      />
     </div>
   );
 }
@@ -450,8 +476,15 @@ function ViewModal({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ShowcasePage() {
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const router = useRouter();
+  const params = useSearchParams();
+  const activeId = params.get("view");
   const activeView = VIEWS.find((v) => v.id === activeId) ?? null;
+
+  const setActiveId = (id: string | null) => {
+    const url = id ? `?view=${id}` : "?";
+    router.push(url);
+  };
 
   return (
     <>
@@ -544,7 +577,7 @@ export default function ShowcasePage() {
         <ViewModal
           view={activeView}
           onClose={() => setActiveId(null)}
-          onSwitch={setActiveId}
+          onSwitch={(id) => setActiveId(id)}
         />
       )}
     </>

@@ -401,3 +401,12 @@ body {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-33.333%); }
 }
+
+/* ── Showcase view transition — curtain sweeps down over content, then off ── */
+
+@keyframes view-curtain {
+  0%   { clip-path: inset(0 0 100% 0); }   /* above screen, invisible */
+  43%  { clip-path: inset(0 0 0% 0); }     /* fully covering */
+  57%  { clip-path: inset(0 0 0% 0); }     /* brief hold while view swaps */
+  100% { clip-path: inset(100% 0 0 0); }   /* swept off bottom, invisible */
+}
