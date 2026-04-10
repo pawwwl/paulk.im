@@ -8,6 +8,7 @@ import {
   GodlyWeather,
   GodlyGifs,
   Speech2Led,
+  StaggeredGrid,
 } from "@/components/godly";
 
 // ── Views ─────────────────────────────────────────────────────────────────────
@@ -314,6 +315,41 @@ const VIEWS: ViewDef[] = [
       </div>
     ),
     component: <GodlyGifs />,
+  },
+  {
+    id: "staggered-grid",
+    label: "GRID",
+    description: "Staggered tile reveal · click to toggle",
+    glowColor: "#ec407a",
+    preview: (
+      <div
+        className="w-full h-full relative overflow-hidden"
+        style={{ background: "#0f0f0f" }}
+      >
+        {/* Mini gradient strip behind tiles */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "linear-gradient(to right, rgb(98,0,234), rgb(236,64,122))",
+          }}
+        />
+        {Array.from({ length: 24 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute"
+            style={{
+              left: (i % 6) * 22 + 4,
+              top: Math.floor(i / 6) * 22 + 4,
+              width: 20,
+              height: 20,
+              backgroundColor: "rgb(15,15,15)",
+              opacity: i % 7 === 3 ? 0 : 1,
+            }}
+          />
+        ))}
+      </div>
+    ),
+    component: <StaggeredGrid />,
   },
 ];
 
