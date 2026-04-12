@@ -7,9 +7,9 @@ import {
   GodlyClips,
   GodlyWeather,
   GodlyGifs,
-  Speech2Led,
   StaggeredGrid,
 } from "@/components/godly";
+import { DynamicFormBuilder } from "@/components/dynamic-form";
 
 // ── Views ─────────────────────────────────────────────────────────────────────
 
@@ -229,49 +229,49 @@ const VIEWS: ViewDef[] = [
     ),
     component: <GodlyWeather />,
   },
-  {
-    id: "speech2led",
-    label: "SPEECH2LED",
-    description: "Voice to LED board · speech API",
-    glowColor: "#5dff3b",
-    preview: (
-      <div
-        className="w-full h-full relative overflow-hidden flex items-center justify-center"
-        style={{ background: "#080808" }}
-      >
-        <div className="px-4 w-full">
-          {[
-            [1,0,1,0,1,0,0,0,1],
-            [1,1,1,1,0,0,0,0,1],
-            [1,0,1,0,1,0,0,0,1],
-          ].map((row, r) => (
-            <div key={r} className="flex justify-center gap-1.5 mb-1.5">
-              {row.map((on, c) => (
-                <div
-                  key={c}
-                  className="rounded-full"
-                  style={{
-                    width: 5,
-                    height: 5,
-                    background: on
-                      ? `rgba(93,255,59,${0.5 + r * 0.15})`
-                      : "rgba(255,255,255,0.07)",
-                  }}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(to bottom, transparent 50%, #080808)",
-          }}
-        />
-      </div>
-    ),
-    component: <Speech2Led />,
-  },
+  // {
+  //   id: "speech2led",
+  //   label: "SPEECH2LED",
+  //   description: "Voice to LED board · speech API",
+  //   glowColor: "#5dff3b",
+  //   preview: (
+  //     <div
+  //       className="w-full h-full relative overflow-hidden flex items-center justify-center"
+  //       style={{ background: "#080808" }}
+  //     >
+  //       <div className="px-4 w-full">
+  //         {[
+  //           [1,0,1,0,1,0,0,0,1],
+  //           [1,1,1,1,0,0,0,0,1],
+  //           [1,0,1,0,1,0,0,0,1],
+  //         ].map((row, r) => (
+  //           <div key={r} className="flex justify-center gap-1.5 mb-1.5">
+  //             {row.map((on, c) => (
+  //               <div
+  //                 key={c}
+  //                 className="rounded-full"
+  //                 style={{
+  //                   width: 5,
+  //                   height: 5,
+  //                   background: on
+  //                     ? `rgba(93,255,59,${0.5 + r * 0.15})`
+  //                     : "rgba(255,255,255,0.07)",
+  //                 }}
+  //               />
+  //             ))}
+  //           </div>
+  //         ))}
+  //       </div>
+  //       <div
+  //         className="absolute inset-0"
+  //         style={{
+  //           background: "linear-gradient(to bottom, transparent 50%, #080808)",
+  //         }}
+  //       />
+  //     </div>
+  //   ),
+  //   component: <Speech2Led />,
+  // },
   {
     id: "gifs",
     label: "GIFS",
@@ -315,6 +315,45 @@ const VIEWS: ViewDef[] = [
       </div>
     ),
     component: <GodlyGifs />,
+  },
+  {
+    id: "form-builder",
+    label: "FORMS",
+    description: "Dynamic form builder · IndexedDB storage",
+    glowColor: "#4D96D9",
+    preview: (
+      <div
+        className="w-full h-full relative overflow-hidden"
+        style={{ background: "#0a0a0a" }}
+      >
+        {/* Mini sidebar */}
+        <div
+          className="absolute top-0 left-0 bottom-0"
+          style={{ width: 38, background: "#0d0d0d", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          {[0,1,2].map((i) => (
+            <div key={i} className="absolute" style={{ left: 6, top: 16 + i * 18, width: 26, height: 8, borderRadius: 3, background: i === 0 ? "rgba(77,150,217,0.25)" : "rgba(255,255,255,0.05)", border: `1px solid ${i === 0 ? "rgba(77,150,217,0.3)" : "rgba(255,255,255,0.06)"}` }} />
+          ))}
+        </div>
+        {/* Mini field cards */}
+        {[
+          { y: 10, w: 80, color: "#4D96D9" },
+          { y: 28, w: 66, color: "#F4A020" },
+          { y: 46, w: 74, color: "#5AAD6B" },
+          { y: 64, w: 58, color: "#E85D7A" },
+        ].map((r, i) => (
+          <div key={i} className="absolute" style={{ left: 46, top: r.y, width: r.w, height: 14, borderRadius: 4, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 4, paddingLeft: 4 }}>
+            <div style={{ width: 6, height: 6, borderRadius: 2, background: r.color + "33" }} />
+            <div style={{ flex: 1, height: 2, background: "rgba(255,255,255,0.1)", borderRadius: 1 }} />
+          </div>
+        ))}
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(to bottom, transparent 55%, #0a0a0a)" }}
+        />
+      </div>
+    ),
+    component: <DynamicFormBuilder />,
   },
   {
     id: "staggered-grid",
