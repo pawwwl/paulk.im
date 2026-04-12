@@ -1,26 +1,26 @@
-"use client"
+"use client";
 
-import { type FC, useEffect, useRef, useState } from "react"
+import { type FC, useEffect, useRef, useState } from "react";
 
 interface GlitchTextProps {
-  children: string
-  speed?: number
-  enableShadows?: boolean
-  enableOnHover?: boolean
-  className?: string
+  children: string;
+  speed?: number;
+  enableShadows?: boolean;
+  enableOnHover?: boolean;
+  className?: string;
 }
 
-const GlitchText: FC<GlitchTextProps> = ({
+export const GlitchText: FC<GlitchTextProps> = ({
   children,
   speed = 0.5,
   enableShadows = true,
   enableOnHover = false,
   className = "",
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null)
-  const [isHovered, setIsHovered] = useState(false)
-  const [frame, setFrame] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [frame, setFrame] = useState(0);
 
   const clipPaths = [
     "inset(10% 0 85% 0)",
@@ -43,55 +43,55 @@ const GlitchText: FC<GlitchTextProps> = ({
     "inset(35% 0 52% 0)",
     "inset(60% 0 28% 0)",
     "inset(8% 0 82% 0)",
-  ]
+  ];
 
-  const [isBursting, setIsBursting] = useState(false)
+  const [isBursting, setIsBursting] = useState(false);
 
   // Looping burst: glitch for ~600ms every ~4s
   useEffect(() => {
-    if (enableOnHover) return
+    if (enableOnHover) return;
 
     const schedule = () => {
-      const pause = 3000 + Math.random() * 2000
+      const pause = 3000 + Math.random() * 2000;
       return setTimeout(() => {
-        setIsBursting(true)
+        setIsBursting(true);
         setTimeout(() => {
-          setIsBursting(false)
-          timeoutRef.current = schedule()
-        }, 600)
-      }, pause)
-    }
+          setIsBursting(false);
+          timeoutRef.current = schedule();
+        }, 600);
+      }, pause);
+    };
 
-    timeoutRef.current = schedule()
-    return () => clearTimeout(timeoutRef?.current as any)
-  }, [enableOnHover])
+    timeoutRef.current = schedule();
+    return () => clearTimeout(timeoutRef?.current as any);
+  }, [enableOnHover]);
 
-  const shouldAnimate = enableOnHover ? isHovered : isBursting
+  const shouldAnimate = enableOnHover ? isHovered : isBursting;
 
   useEffect(() => {
-    if (!shouldAnimate) return
+    if (!shouldAnimate) return;
 
-    const intervalMs = (speed * 1000) / clipPaths.length
+    const intervalMs = (speed * 1000) / clipPaths.length;
     const interval = setInterval(() => {
-      setFrame(f => (f + 1) % clipPaths.length)
-    }, intervalMs)
+      setFrame((f) => (f + 1) % clipPaths.length);
+    }, intervalMs);
 
-    return () => clearInterval(interval)
-  }, [shouldAnimate, speed, clipPaths.length])
+    return () => clearInterval(interval);
+  }, [shouldAnimate, speed, clipPaths.length]);
 
   const containerStyle: React.CSSProperties = {
     position: "relative",
     display: "inline-block",
     cursor: "pointer",
     userSelect: "none",
-  }
+  };
 
   const textStyle: React.CSSProperties = {
     position: "relative",
     fontSize: "inherit",
     fontWeight: "inherit",
     color: "inherit",
-  }
+  };
 
   const layerBaseStyle: React.CSSProperties = {
     position: "absolute",
@@ -104,12 +104,12 @@ const GlitchText: FC<GlitchTextProps> = ({
     color: "inherit",
     background: "#0e0e0e",
     overflow: "hidden",
-  }
+  };
 
-  const afterIndex = frame
-  const beforeIndex = (frame + 10) % clipPaths.length
+  const afterIndex = frame;
+  const beforeIndex = (frame + 10) % clipPaths.length;
 
-  const showLayers = enableOnHover ? isHovered : isBursting
+  const showLayers = enableOnHover ? isHovered : isBursting;
 
   const afterStyle: React.CSSProperties = {
     ...layerBaseStyle,
@@ -118,7 +118,7 @@ const GlitchText: FC<GlitchTextProps> = ({
     clipPath: showLayers ? clipPaths[afterIndex] : "inset(0 0 100% 0)",
     opacity: showLayers ? 1 : 0,
     transition: "opacity 0.1s",
-  }
+  };
 
   const beforeStyle: React.CSSProperties = {
     ...layerBaseStyle,
@@ -127,7 +127,7 @@ const GlitchText: FC<GlitchTextProps> = ({
     clipPath: showLayers ? clipPaths[beforeIndex] : "inset(0 0 100% 0)",
     opacity: showLayers ? 1 : 0,
     transition: "opacity 0.1s",
-  }
+  };
 
   return (
     <div
@@ -147,7 +147,5 @@ const GlitchText: FC<GlitchTextProps> = ({
         {children}
       </span>
     </div>
-  )
-}
-
-export default GlitchText
+  );
+};

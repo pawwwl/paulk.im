@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { TIME_LINE, SKILLS } from "@/lib/data";
-import { StripedPattern } from "@/components/striped-pattern";
+import { StripedPattern } from "../striped-pattern";
 
 const COLORS = ["#4D96D9", "#F4A020", "#E85D7A", "#5AAD6B"];
 const MAX_radius = 220;

@@ -6,7 +6,7 @@ import {
   Icon_ChevronLeft,
   Icon_ChevronRight,
   Icon_Location,
-} from "@/components/icons";
+} from "../icons";
 
 function ScoreBadge({ score }: { score: number }) {
   const color =
@@ -180,7 +180,9 @@ export const Calendar = () => {
                     onSelectDate={handleSelectDate}
                     selectedDate={selectedDate}
                     isActive={offset === 0}
-                    monthKey={currentDate.add(offset, "month").format("YYYY-MM")}
+                    monthKey={currentDate
+                      .add(offset, "month")
+                      .format("YYYY-MM")}
                   />
                 )}
                 {view === "week" && (
@@ -543,7 +545,13 @@ function EventListItem({ event }: { event: CalendarEvent }) {
   );
 }
 
-export const CalendarMonth = ({ days, onSelectDate, selectedDate, isActive = false, monthKey }: Props) => {
+export const CalendarMonth = ({
+  days,
+  onSelectDate,
+  selectedDate,
+  isActive = false,
+  monthKey,
+}: Props) => {
   const eventsForPanel =
     selectedDate === null
       ? days.filter((d) => d.isCurrentMonth).flatMap((d) => d.events)
@@ -584,63 +592,66 @@ export const CalendarMonth = ({ days, onSelectDate, selectedDate, isActive = fal
               const row = Math.floor(index / 7);
               const delay = 180 + col * 38 + row * 62;
               return (
-              <button
-                key={day.date}
-                type="button"
-                onClick={() => onSelectDate(day.date)}
-                style={animated ? {
-                  animation: `cal-cell-in 420ms cubic-bezier(0.34,1.56,0.64,1) ${delay}ms both`,
-                } : { opacity: 1 }}
-                className={`group relative flex flex-col px-3 py-2 focus:z-10 min-h-14 lg:min-h-20 hover:bg-gray-50 dark:hover:bg-white/5 ${
-                  day.isCurrentMonth
-                    ? "bg-white dark:bg-surface"
-                    : "bg-gray-50 text-gray-500 dark:bg-surface/50 dark:text-on-surface-variant"
-                } ${day.isSelected ? "font-semibold" : ""}`}
-              >
-
-                <time
-                  dateTime={day.date}
-                  className={`ml-auto flex size-6 items-center justify-center rounded-full text-sm ${(() => {
-                    if (day.isToday && day.isSelected)
-                      return "bg-indigo-600 font-semibold text-white dark:bg-indigo-500";
-                    if (day.isToday)
-                      return "font-semibold text-indigo-600 dark:text-indigo-400";
-                    if (day.isSelected)
-                      return "bg-gray-900 font-semibold text-white dark:bg-white dark:text-gray-900";
-                    if (day.isCurrentMonth)
-                      return "text-gray-900 dark:text-primary";
-                    return "text-gray-400 dark:text-primary/40";
-                  })()}`}
+                <button
+                  key={day.date}
+                  type="button"
+                  onClick={() => onSelectDate(day.date)}
+                  style={
+                    animated
+                      ? {
+                          animation: `cal-cell-in 420ms cubic-bezier(0.34,1.56,0.64,1) ${delay}ms both`,
+                        }
+                      : { opacity: 1 }
+                  }
+                  className={`group relative flex flex-col px-3 py-2 focus:z-10 min-h-14 lg:min-h-20 hover:bg-gray-50 dark:hover:bg-white/5 ${
+                    day.isCurrentMonth
+                      ? "bg-white dark:bg-surface"
+                      : "bg-gray-50 text-gray-500 dark:bg-surface/50 dark:text-on-surface-variant"
+                  } ${day.isSelected ? "font-semibold" : ""}`}
                 >
-                  {day.date.split("-").pop()?.replace(/^0/, "")}
-                </time>
-                <span className="sr-only">{day.events.length} events</span>
-                {/* Desktop: dot indicators only (events shown in sidebar) */}
-                {day.events.length > 0 && (
-                  <span className="-mx-0.5 mt-auto hidden flex-wrap-reverse lg:flex">
-                    {day.events.slice(0, 4).map((e) => (
-                      <span
-                        key={e.id}
-                        className="mx-0.5 mb-1 size-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500"
-                      />
-                    ))}
-                    {day.events.length > 4 && (
-                      <span className="mx-0.5 mb-1 size-1.5 rounded-full bg-gray-400 dark:bg-gray-500" />
-                    )}
-                  </span>
-                )}
-                {/* Mobile: event dot indicators */}
-                {day.events.length > 0 && (
-                  <span className="-mx-0.5 mt-auto flex flex-wrap-reverse lg:hidden">
-                    {day.events.map((e) => (
-                      <span
-                        key={e.id}
-                        className="mx-0.5 mb-1 size-1.5 rounded-full bg-gray-400 dark:bg-gray-500"
-                      />
-                    ))}
-                  </span>
-                )}
-              </button>
+                  <time
+                    dateTime={day.date}
+                    className={`ml-auto flex size-6 items-center justify-center rounded-full text-sm ${(() => {
+                      if (day.isToday && day.isSelected)
+                        return "bg-indigo-600 font-semibold text-white dark:bg-indigo-500";
+                      if (day.isToday)
+                        return "font-semibold text-indigo-600 dark:text-indigo-400";
+                      if (day.isSelected)
+                        return "bg-gray-900 font-semibold text-white dark:bg-white dark:text-gray-900";
+                      if (day.isCurrentMonth)
+                        return "text-gray-900 dark:text-primary";
+                      return "text-gray-400 dark:text-primary/40";
+                    })()}`}
+                  >
+                    {day.date.split("-").pop()?.replace(/^0/, "")}
+                  </time>
+                  <span className="sr-only">{day.events.length} events</span>
+                  {/* Desktop: dot indicators only (events shown in sidebar) */}
+                  {day.events.length > 0 && (
+                    <span className="-mx-0.5 mt-auto hidden flex-wrap-reverse lg:flex">
+                      {day.events.slice(0, 4).map((e) => (
+                        <span
+                          key={e.id}
+                          className="mx-0.5 mb-1 size-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500"
+                        />
+                      ))}
+                      {day.events.length > 4 && (
+                        <span className="mx-0.5 mb-1 size-1.5 rounded-full bg-gray-400 dark:bg-gray-500" />
+                      )}
+                    </span>
+                  )}
+                  {/* Mobile: event dot indicators */}
+                  {day.events.length > 0 && (
+                    <span className="-mx-0.5 mt-auto flex flex-wrap-reverse lg:hidden">
+                      {day.events.map((e) => (
+                        <span
+                          key={e.id}
+                          className="mx-0.5 mb-1 size-1.5 rounded-full bg-gray-400 dark:bg-gray-500"
+                        />
+                      ))}
+                    </span>
+                  )}
+                </button>
               );
             })}
           </div>

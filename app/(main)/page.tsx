@@ -1,13 +1,15 @@
-import { Calendar } from "@/components/calendar";
-import { ChatWidget } from "@/components/chat-widget";
+import {
+  LocationCard,
+  Calendar,
+  ChatWidget,
+  PixelImage,
+  ProfileWave,
+  GlitchText,
+  TimelineSectionV2,
+  MusicCard,
+} from "@/components/main";
 
-import { LocationCard } from "@/components/location-card";
 import Image from "next/image";
-import { PixelImage } from "@/components/pixel-image";
-import { ProfileWave } from "@/components/profile-wave";
-import GlitchText from "@/components/glitch-text";
-import { TimelineSectionV2 } from "@/components/timeline/index.v2";
-import { MusicCard } from "@/components/music-card";
 
 export default function Home() {
   return (

@@ -8,8 +8,8 @@ import {
   GodlyWeather,
   GodlyGifs,
   StaggeredGrid,
-} from "@/components/godly";
-import { DynamicFormBuilder } from "@/components/dynamic-form";
+  DynamicFormBuilder,
+} from "@/components/showcase";
 
 // ── Views ─────────────────────────────────────────────────────────────────────
 
@@ -305,10 +305,27 @@ const VIEWS: ViewDef[] = [
         {/* Mini sidebar */}
         <div
           className="absolute top-0 left-0 bottom-0"
-          style={{ width: 38, background: "#0d0d0d", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+          style={{
+            width: 38,
+            background: "#0d0d0d",
+            borderRight: "1px solid rgba(255,255,255,0.06)",
+          }}
         >
-          {[0,1,2].map((i) => (
-            <div key={i} className="absolute" style={{ left: 6, top: 16 + i * 18, width: 26, height: 8, borderRadius: 3, background: i === 0 ? "rgba(77,150,217,0.25)" : "rgba(255,255,255,0.05)", border: `1px solid ${i === 0 ? "rgba(77,150,217,0.3)" : "rgba(255,255,255,0.06)"}` }} />
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="absolute"
+              style={{
+                left: 6,
+                top: 16 + i * 18,
+                width: 26,
+                height: 8,
+                borderRadius: 3,
+                background:
+                  i === 0 ? "rgba(77,150,217,0.25)" : "rgba(255,255,255,0.05)",
+                border: `1px solid ${i === 0 ? "rgba(77,150,217,0.3)" : "rgba(255,255,255,0.06)"}`,
+              }}
+            />
           ))}
         </div>
         {/* Mini field cards */}
@@ -318,9 +335,39 @@ const VIEWS: ViewDef[] = [
           { y: 46, w: 74, color: "#5AAD6B" },
           { y: 64, w: 58, color: "#E85D7A" },
         ].map((r, i) => (
-          <div key={i} className="absolute" style={{ left: 46, top: r.y, width: r.w, height: 14, borderRadius: 4, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 4, paddingLeft: 4 }}>
-            <div style={{ width: 6, height: 6, borderRadius: 2, background: r.color + "33" }} />
-            <div style={{ flex: 1, height: 2, background: "rgba(255,255,255,0.1)", borderRadius: 1 }} />
+          <div
+            key={i}
+            className="absolute"
+            style={{
+              left: 46,
+              top: r.y,
+              width: r.w,
+              height: 14,
+              borderRadius: 4,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              paddingLeft: 4,
+            }}
+          >
+            <div
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 2,
+                background: r.color + "33",
+              }}
+            />
+            <div
+              style={{
+                flex: 1,
+                height: 2,
+                background: "rgba(255,255,255,0.1)",
+                borderRadius: 1,
+              }}
+            />
           </div>
         ))}
       </div>
@@ -341,7 +388,8 @@ const VIEWS: ViewDef[] = [
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(to right, rgb(98,0,234), rgb(236,64,122))",
+            background:
+              "linear-gradient(to right, rgb(98,0,234), rgb(236,64,122))",
           }}
         />
         {Array.from({ length: 24 }).map((_, i) => (

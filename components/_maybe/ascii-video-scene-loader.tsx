@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const AsciiVideoScene = dynamic(
   () =>
-    import("@/components/ascii-video-scene").then((m) => ({
+    import("./ascii-video-scene").then((m) => ({
       default: m.AsciiVideoScene,
     })),
   {
@@ -16,7 +16,7 @@ const AsciiVideoScene = dynamic(
         </span>
       </div>
     ),
-  }
+  },
 );
 
 export function AsciiVideoLoader() {

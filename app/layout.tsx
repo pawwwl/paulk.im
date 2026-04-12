@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import { CommandPalette } from "@/components/command-palette";
-import { SearchTriggerButton } from "@/components/search-trigger-button";
-import { DotPattern } from "@/components/dot-pattern";
+// import { CommandPalette } from "@/components/command-palette";
+import { DotPattern } from "@/components/layout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +33,7 @@ export default function RootLayout({
       <body>
         <DotPattern className="bg-background!" glowColor="#00e5ff" />
         <div className="relative z-10 text-on-surface font-body selection:bg-primary selection:text-on-primary overflow-x-hidden">
-          <CommandPalette />
+          {/* <CommandPalette /> */}
           <div className="scanline pointer-events-none"></div>
 
           <nav className="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-12 bg-[#0e0e0e] border-b border-[#3b494c]/20">
