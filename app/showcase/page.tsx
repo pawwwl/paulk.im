@@ -9,6 +9,7 @@ import {
   GodlyGifs,
   StaggeredGrid,
   DynamicFormBuilder,
+  WordleGame,
 } from "@/components/showcase";
 
 // ── Views ─────────────────────────────────────────────────────────────────────
@@ -24,68 +25,6 @@ type ViewDef = {
 
 // ── Glow card grid ────────────────────────────────────────────────────────────
 
-function GlowCardGrid({
-  children,
-  className,
-  style,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const grid = ref.current;
-    if (!grid) return;
-
-    // Track pointer position relative to each card's center
-    const onMove = (e: PointerEvent) => {
-      grid
-        .querySelectorAll<HTMLElement>("[data-slot='glow-card']")
-        .forEach((card) => {
-          const r = card.getBoundingClientRect();
-          card.style.setProperty(
-            "--pointer-x",
-            ((e.clientX - (r.left + r.width / 2)) / (r.width / 2)).toFixed(3),
-          );
-          card.style.setProperty(
-            "--pointer-y",
-            ((e.clientY - (r.top + r.height / 2)) / (r.height / 2)).toFixed(3),
-          );
-        });
-    };
-
-    // Show/hide glow per card on hover
-    const onEnter = (e: PointerEvent) => {
-      const card = (e.target as Element).closest<HTMLElement>(
-        "[data-slot='glow-card']",
-      );
-      card?.style.setProperty("--glow-opacity", "1");
-    };
-    const onLeave = (e: PointerEvent) => {
-      const card = (e.target as Element).closest<HTMLElement>(
-        "[data-slot='glow-card']",
-      );
-      card?.style.setProperty("--glow-opacity", "0");
-    };
-
-    document.addEventListener("pointermove", onMove);
-    grid.addEventListener("pointerover", onEnter);
-    grid.addEventListener("pointerout", onLeave);
-    return () => {
-      document.removeEventListener("pointermove", onMove);
-      grid.removeEventListener("pointerover", onEnter);
-      grid.removeEventListener("pointerout", onLeave);
-    };
-  }, []);
-
-  return (
-    <div ref={ref} className={className} style={style}>
-      {children}
-    </div>
-  );
-}
 
 const VIEWS: ViewDef[] = [
   {
@@ -96,18 +35,18 @@ const VIEWS: ViewDef[] = [
     preview: (
       <div
         className="w-full h-full relative overflow-hidden"
-        style={{ background: "#080808" }}
+        style={{ background: "#111" }}
       >
         {[
-          ["#0d0010", "#1a0020"],
-          ["#000d10", "#001a20"],
-          ["#100d00", "#201a00"],
-          ["#000010", "#00001a"],
-          ["#100000", "#200000"],
-          ["#001000", "#002000"],
-          ["#100010", "#200020"],
-          ["#001010", "#002020"],
-          ["#0d0010", "#1a0020"],
+          ["#2d0050", "#4a007a"],
+          ["#003050", "#005080"],
+          ["#402800", "#704500"],
+          ["#1a0040", "#320070"],
+          ["#400010", "#700025"],
+          ["#004010", "#007025"],
+          ["#350030", "#600055"],
+          ["#003535", "#005f5f"],
+          ["#2d0050", "#4a007a"],
         ].map((g, i) => (
           <div
             key={i}
@@ -118,7 +57,7 @@ const VIEWS: ViewDef[] = [
               left: (i % 3) * 44 + 8,
               top: Math.floor(i / 3) * 44 + 8,
               background: `linear-gradient(135deg, ${g[0]}, ${g[1]})`,
-              border: "1px solid rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
             }}
           />
         ))}
@@ -134,7 +73,7 @@ const VIEWS: ViewDef[] = [
     preview: (
       <div
         className="w-full h-full relative overflow-hidden"
-        style={{ background: "#080808" }}
+        style={{ background: "#111" }}
       >
         {[
           { x: 8, y: 8, w: 54, h: 36 },
@@ -152,15 +91,15 @@ const VIEWS: ViewDef[] = [
               top: r.y,
               width: r.w,
               height: r.h,
-              background: `rgba(255,255,255,${0.03 + (i % 3) * 0.02})`,
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: `rgba(255,255,255,${0.08 + (i % 3) * 0.04})`,
+              border: "1px solid rgba(255,255,255,0.14)",
             }}
           >
             <svg
               width="10"
               height="10"
               viewBox="0 0 10 10"
-              fill="rgba(255,255,255,0.2)"
+              fill="rgba(255,255,255,0.45)"
             >
               <polygon points="2,1 9,5 2,9" />
             </svg>
@@ -178,13 +117,13 @@ const VIEWS: ViewDef[] = [
     preview: (
       <div
         className="w-full h-full relative overflow-hidden"
-        style={{ background: "#04080f" }}
+        style={{ background: "#080f1a" }}
       >
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 30%, rgba(30,80,160,0.4) 0%, transparent 70%)",
+              "radial-gradient(ellipse at 50% 30%, rgba(30,100,220,0.55) 0%, transparent 70%)",
           }}
         />
         {[
@@ -200,7 +139,7 @@ const VIEWS: ViewDef[] = [
               left: r.x,
               top: r.y,
               fontSize: 8,
-              color: `rgba(255,255,255,${0.55 - i * 0.08})`,
+              color: `rgba(255,255,255,${0.85 - i * 0.1})`,
               letterSpacing: "0.05em",
             }}
           >
@@ -262,13 +201,13 @@ const VIEWS: ViewDef[] = [
     preview: (
       <div
         className="w-full h-full relative overflow-hidden"
-        style={{ background: "#080808" }}
+        style={{ background: "#111" }}
       >
         {[
-          { x: 8, y: 8, w: 116, h: 48, c: "rgba(77,150,217,0.12)" },
-          { x: 8, y: 64, w: 54, h: 48, c: "rgba(244,160,32,0.12)" },
-          { x: 70, y: 64, w: 54, h: 48, c: "rgba(232,93,122,0.12)" },
-          { x: 8, y: 120, w: 116, h: 36, c: "rgba(90,173,107,0.12)" },
+          { x: 8, y: 8, w: 116, h: 48, c: "rgba(77,150,217,0.28)" },
+          { x: 8, y: 64, w: 54, h: 48, c: "rgba(244,160,32,0.28)" },
+          { x: 70, y: 64, w: 54, h: 48, c: "rgba(232,93,122,0.28)" },
+          { x: 8, y: 120, w: 116, h: 36, c: "rgba(90,173,107,0.28)" },
         ].map((r, i) => (
           <div
             key={i}
@@ -279,12 +218,12 @@ const VIEWS: ViewDef[] = [
               width: r.w,
               height: r.h,
               background: r.c,
-              border: "1px solid rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
             }}
           >
             <div
               className="w-full h-0.5 mt-1"
-              style={{ background: `rgba(255,255,255,${0.06 + i * 0.02})` }}
+              style={{ background: `rgba(255,255,255,${0.18 + i * 0.04})` }}
             />
           </div>
         ))}
@@ -300,15 +239,15 @@ const VIEWS: ViewDef[] = [
     preview: (
       <div
         className="w-full h-full relative overflow-hidden"
-        style={{ background: "#0a0a0a" }}
+        style={{ background: "#131313" }}
       >
         {/* Mini sidebar */}
         <div
           className="absolute top-0 left-0 bottom-0"
           style={{
             width: 38,
-            background: "#0d0d0d",
-            borderRight: "1px solid rgba(255,255,255,0.06)",
+            background: "#1a1a1a",
+            borderRight: "1px solid rgba(255,255,255,0.1)",
           }}
         >
           {[0, 1, 2].map((i) => (
@@ -322,8 +261,8 @@ const VIEWS: ViewDef[] = [
                 height: 8,
                 borderRadius: 3,
                 background:
-                  i === 0 ? "rgba(77,150,217,0.25)" : "rgba(255,255,255,0.05)",
-                border: `1px solid ${i === 0 ? "rgba(77,150,217,0.3)" : "rgba(255,255,255,0.06)"}`,
+                  i === 0 ? "rgba(77,150,217,0.45)" : "rgba(255,255,255,0.1)",
+                border: `1px solid ${i === 0 ? "rgba(77,150,217,0.55)" : "rgba(255,255,255,0.12)"}`,
               }}
             />
           ))}
@@ -344,8 +283,8 @@ const VIEWS: ViewDef[] = [
               width: r.w,
               height: 14,
               borderRadius: 4,
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.07)",
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.13)",
               display: "flex",
               alignItems: "center",
               gap: 4,
@@ -357,14 +296,14 @@ const VIEWS: ViewDef[] = [
                 width: 6,
                 height: 6,
                 borderRadius: 2,
-                background: r.color + "33",
+                background: r.color + "88",
               }}
             />
             <div
               style={{
                 flex: 1,
                 height: 2,
-                background: "rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.22)",
                 borderRadius: 1,
               }}
             />
@@ -375,8 +314,47 @@ const VIEWS: ViewDef[] = [
     component: <DynamicFormBuilder />,
   },
   {
-    id: "staggered-grid",
-    label: "GRID",
+    id: "wordle",
+    label: "WORDLE",
+    description: "Classic word game · animated reveals",
+    glowColor: "#538d4e",
+    preview: (
+      <div
+        className="w-full h-full relative overflow-hidden flex items-center justify-center"
+        style={{ background: "#131313" }}
+      >
+        {/* Mini 3-row x 5-col board preview */}
+        {[
+          ["#4a4a4e","#c9af3b","#538d4e","#4a4a4e","#4a4a4e"],
+          ["#538d4e","#538d4e","#4a4a4e","#c9af3b","#4a4a4e"],
+          ["rgba(255,255,255,0.18)","rgba(255,255,255,0.18)","rgba(255,255,255,0.18)","rgba(255,255,255,0.18)","rgba(255,255,255,0.18)"],
+        ].map((row, r) => (
+          <div
+            key={r}
+            className="absolute flex gap-0.75"
+            style={{ top: 18 + r * 22 }}
+          >
+            {row.map((color, c) => (
+              <div
+                key={c}
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 2,
+                  background: color,
+                  border: `1px solid ${color.startsWith("rgba") ? "rgba(255,255,255,0.25)" : color}`,
+                }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    ),
+    component: <WordleGame />,
+  },
+  {
+    id: "mem-emoji",
+    label: "MemEmoji",
     description: "Staggered tile reveal · click to toggle",
     glowColor: "#ec407a",
     preview: (
@@ -401,8 +379,8 @@ const VIEWS: ViewDef[] = [
               top: Math.floor(i / 6) * 22 + 4,
               width: 20,
               height: 20,
-              backgroundColor: "rgb(15,15,15)",
-              opacity: i % 7 === 3 ? 0 : 1,
+              backgroundColor: "rgb(20,20,20)",
+              opacity: i % 7 === 3 ? 0 : 0.82,
             }}
           />
         ))}
@@ -588,8 +566,8 @@ function ShowcaseContent() {
         {/* Top bar with logo */}
 
         {/* Preview cards row */}
-        <GlowCardGrid
-          className="flex gap-2 px-5 pb-4 overflow-x-auto flex-wrap"
+        <div
+          className="flex gap-8 px-2 pb-4 overflow-x-auto flex-wrap"
           style={{ scrollbarWidth: "none" } as React.CSSProperties}
         >
           {VIEWS.map((view) => (
@@ -597,51 +575,21 @@ function ShowcaseContent() {
               key={view.id}
               onClick={() => setActiveId(view.id)}
               className="shrink-0 flex flex-col gap-2 text-left cursor-pointer active:scale-[0.98] transition-transform"
-              style={{ width: 140 }}
+              style={{ width: 180 }}
             >
-              {/* Glow card thumbnail */}
               <div
-                data-slot="glow-card"
                 className="relative w-full rounded-md overflow-hidden"
-                style={
-                  { height: 88, "--glow-opacity": "0" } as React.CSSProperties
-                }
+                style={{ height: 100 }}
               >
                 {/* Preview content */}
                 <div className="size-full [clip-path:inset(0_round_6px)]">
                   {view.preview}
                 </div>
 
-                {/* Glow blob — above preview via screen blend, tracks pointer */}
+                {/* Border */}
                 <div
-                  className="pointer-events-none absolute inset-0 overflow-hidden [clip-path:inset(0_round_6px)]"
-                  style={{ mixBlendMode: "screen" }}
-                >
-                  <div
-                    className="absolute inset-0 flex items-center justify-center will-change-[transform,opacity]"
-                    style={{
-                      transform:
-                        "translate(calc(var(--pointer-x, 0) * 70px), calc(var(--pointer-y, 0) * 44px)) scale(4)",
-                      filter: "blur(20px) saturate(3)",
-                      opacity: "var(--glow-opacity, 0)" as unknown as number,
-                      transition: "opacity 0.4s ease",
-                    }}
-                  >
-                    <div
-                      className="size-10 rounded-full"
-                      style={{ background: view.glowColor }}
-                    />
-                  </div>
-                </div>
-
-                {/* Border — glows with view color on hover */}
-                <div
-                  className="pointer-events-none absolute inset-0 rounded-md transition-shadow duration-400"
-                  style={
-                    {
-                      boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${view.glowColor} calc(var(--glow-opacity, 0) * 60%), rgba(255,255,255,0.08))`,
-                    } as React.CSSProperties
-                  }
+                  className="pointer-events-none absolute inset-0 rounded-md"
+                  style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
                 />
               </div>
               {/* Label */}
@@ -661,7 +609,7 @@ function ShowcaseContent() {
               </div>
             </button>
           ))}
-        </GlowCardGrid>
+        </div>
       </div>
 
       {/* ── Background ───────────────────────────────────────────────────── */}

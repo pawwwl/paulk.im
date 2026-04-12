@@ -395,6 +395,46 @@ body {
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* ── Wordle Game Animations ── */
+
+@keyframes wordle-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wordle-shake {
+  0%, 100% { transform: translateX(0); }
+  18%  { transform: translateX(-8px); }
+  36%  { transform: translateX(8px); }
+  54%  { transform: translateX(-5px); }
+  72%  { transform: translateX(5px); }
+  88%  { transform: translateX(-2px); }
+}
+
+@keyframes wordle-flip-out {
+  0%   { transform: scaleY(1); }
+  100% { transform: scaleY(0); }
+}
+
+@keyframes wordle-flip-in {
+  0%   { transform: scaleY(0); }
+  100% { transform: scaleY(1); }
+}
+
+@keyframes wordle-bounce {
+  0%, 100% { transform: translateY(0); }
+  30%  { transform: translateY(-22px); }
+  50%  { transform: translateY(-6px); }
+  70%  { transform: translateY(-14px); }
+  85%  { transform: translateY(-3px); }
+}
+
+@keyframes wordle-msg-in {
+  0%   { opacity: 0; transform: translateY(-8px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* ── Showcase Marquee Nav ── */
 
 @keyframes showcase-marquee {
