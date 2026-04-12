@@ -158,6 +158,7 @@ export function WordleGame() {
   const [isRevealing, setIsRevealing] = useState(false);
   const [message, setMessage] = useState<string>("");
   const msgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
 
   // Stable refs so event handler closures don't stale
   const boardRef = useRef(board);
@@ -304,7 +305,7 @@ export function WordleGame() {
     [shake, showMessage]
   );
 
-  // Physical keyboard listener
+  // Physical + native mobile keyboard listener
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -317,6 +318,19 @@ export function WordleGame() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handleKey]);
+
+  // Route native mobile keyboard input through handleKey
+  const onHiddenChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toUpperCase();
+    e.target.value = "";
+    for (const ch of val) {
+      if (/^[A-Z]$/.test(ch)) handleKey(ch);
+    }
+  }, [handleKey]);
+
+  const focusHiddenInput = useCallback(() => {
+    hiddenInputRef.current?.focus();
+  }, []);
 
   const resetGame = useCallback(() => {
     setBoard(makeBoard());
@@ -338,6 +352,26 @@ export function WordleGame() {
       className="flex flex-col items-center justify-center h-full w-full select-none overflow-auto py-6"
       style={{ background: "#0e0e0e", fontFamily: "var(--font-mono)" }}
     >
+      {/* Hidden input to capture native mobile keyboard */}
+      <input
+        ref={hiddenInputRef}
+        onChange={onHiddenChange}
+        inputMode="text"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="characters"
+        spellCheck={false}
+        style={{
+          position: "absolute",
+          opacity: 0,
+          pointerEvents: "none",
+          width: 1,
+          height: 1,
+          top: 0,
+          left: 0,
+        }}
+      />
+
       {/* Header */}
       <div
         className="font-mono text-[11px] uppercase tracking-[0.35em] mb-5"
@@ -364,8 +398,18 @@ export function WordleGame() {
         )}
       </div>
 
-      {/* Board */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 28 }}>
+      {/* Board — tiles scale down on narrow screens */}
+      <div
+        style={
+          {
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            marginBottom: 28,
+            "--tile": "clamp(44px, calc((100vw - 56px) / 5), 54px)",
+          } as React.CSSProperties
+        }
+      >
         {board.map((row, r) => {
           const isShaking = shakingRow === r;
           const isBouncing = bouncingRow === r;
@@ -404,13 +448,14 @@ export function WordleGame() {
                 return (
                   <div
                     key={c}
+                    onClick={focusHiddenInput}
                     style={{
-                      width: 54,
-                      height: 54,
+                      width: "var(--tile)",
+                      height: "var(--tile)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: 22,
+                      fontSize: "calc(var(--tile) * 0.41)",
                       fontWeight: 800,
                       color: "#fff",
                       background: bg,
@@ -419,6 +464,7 @@ export function WordleGame() {
                       animation: anim,
                       transition: "border-color 80ms ease, background 80ms ease",
                       letterSpacing: "0.02em",
+                      cursor: "text",
                     }}
                   >
                     {cell.letter}
@@ -430,8 +476,18 @@ export function WordleGame() {
         })}
       </div>
 
-      {/* Keyboard */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 7, alignItems: "center" }}>
+      {/* Keyboard — keys scale down on narrow screens */}
+      <div
+        style={
+          {
+            display: "flex",
+            flexDirection: "column",
+            gap: 7,
+            alignItems: "center",
+            "--key-w": "clamp(27px, calc((100vw - 77px) / 10), 38px)",
+          } as React.CSSProperties
+        }
+      >
         {KB_ROWS.map((row, ri) => (
           <div key={ri} style={{ display: "flex", gap: 5 }}>
             {row.map((key) => {
@@ -443,14 +499,14 @@ export function WordleGame() {
                   key={key}
                   onClick={() => handleKey(key)}
                   style={{
-                    width: isWide ? 62 : 38,
-                    height: 56,
+                    width: isWide ? "calc(var(--key-w) * 1.63)" : "var(--key-w)",
+                    height: "calc(var(--key-w) * 1.47)",
                     borderRadius: 4,
                     border: "none",
                     outline: "none",
                     background: bg,
                     color: "#fff",
-                    fontSize: isWide ? 9 : 14,
+                    fontSize: isWide ? "calc(var(--key-w) * 0.24)" : "calc(var(--key-w) * 0.37)",
                     fontWeight: 700,
                     fontFamily: "var(--font-mono)",
                     letterSpacing: isWide ? "0.08em" : "0.04em",
@@ -461,6 +517,8 @@ export function WordleGame() {
                     alignItems: "center",
                     justifyContent: "center",
                     userSelect: "none",
+                    touchAction: "manipulation",
+                    WebkitTapHighlightColor: "transparent",
                   }}
                 >
                   {key}
