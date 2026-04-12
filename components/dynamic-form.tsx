@@ -5,15 +5,22 @@ import { cn } from "@/lib/utils";
 
 // ── IndexedDB ─────────────────────────────────────────────────────────────────
 
+const CSV_SIZE_LIMIT = 5 * 1024 * 1024; // 5 MB
+
 const DB_NAME = "form-builder-db";
 const DB_VERSION = 2;
 const STORE = "templates";
 const SUB_STORE = "submissions";
 
+let _db: IDBDatabase | null = null;
+let _dbOpening: Promise<IDBDatabase> | null = null;
+
 function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  if (_db) return Promise.resolve(_db);
+  if (_dbOpening) return _dbOpening;
+  _dbOpening = new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = (e) => {
+    req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE))
         db.createObjectStore(STORE, { keyPath: "id" });
@@ -21,11 +28,11 @@ function openDB(): Promise<IDBDatabase> {
         const ss = db.createObjectStore(SUB_STORE, { keyPath: "id" });
         ss.createIndex("templateId", "templateId", { unique: false });
       }
-      void e;
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { _db = req.result; _dbOpening = null; resolve(_db); };
+    req.onerror  = () => { _dbOpening = null; reject(req.error); };
   });
+  return _dbOpening;
 }
 
 async function dbGetAll(): Promise<FormTemplate[]> {
@@ -69,6 +76,18 @@ async function dbPutSubmission(s: FormSubmission): Promise<void> {
   return new Promise((res, rej) => {
     const tx = db.transaction(SUB_STORE, "readwrite");
     tx.objectStore(SUB_STORE).put(s);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+
+async function dbPutManySubmissions(subs: FormSubmission[]): Promise<void> {
+  if (subs.length === 0) return;
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(SUB_STORE, "readwrite");
+    const store = tx.objectStore(SUB_STORE);
+    for (const s of subs) store.put(s);
     tx.oncomplete = () => res();
     tx.onerror = () => rej(tx.error);
   });
@@ -238,6 +257,93 @@ function makeSampleTemplate(): FormTemplate {
   };
 }
 
+// ── CSV import helpers ────────────────────────────────────────────────────────
+
+function parseCSV(text: string): { headers: string[]; rows: string[][] } {
+  const lines = text.split(/\r?\n/);
+  const nonEmpty: string[] = [];
+  for (const l of lines) if (l.trim() !== "") nonEmpty.push(l);
+  if (nonEmpty.length === 0) return { headers: [], rows: [] };
+
+  const parseLine = (line: string): string[] => {
+    const result: string[] = [];
+    let i = 0;
+    while (i <= line.length) {
+      if (i === line.length) { result.push(""); break; }
+      if (line[i] === '"') {
+        let val = ""; i++;
+        while (i < line.length) {
+          if (line[i] === '"' && line[i + 1] === '"') { val += '"'; i += 2; }
+          else if (line[i] === '"') { i++; break; }
+          else val += line[i++];
+        }
+        result.push(val);
+        if (line[i] === ',') i++;
+      } else {
+        const start = i;
+        while (i < line.length && line[i] !== ',') i++;
+        result.push(line.slice(start, i));
+        if (i < line.length) i++;
+      }
+    }
+    return result;
+  };
+
+  const headers = parseLine(nonEmpty[0]).map((h) => h.trim()).filter(Boolean);
+  const rows = nonEmpty.slice(1).map(parseLine);
+  return { headers, rows };
+}
+
+// Explicit date format patterns — ordered from most to least common in CSVs.
+// Each must match the whole value (anchored) to avoid false positives.
+const DATE_PATTERNS = [
+  /^\d{4}-\d{2}-\d{2}$/,                                                                     // 2024-01-15
+  /^\d{1,2}\/\d{1,2}\/\d{4}$/,                                                               // 01/15/2024
+  /^\d{4}\/\d{1,2}\/\d{1,2}$/,                                                               // 2024/01/15
+  /^\d{1,2}-\d{1,2}-\d{4}$/,                                                                 // 01-15-2024
+  /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}$/i,     // Jan 15, 2024
+  /^\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}$/i,        // 15 Jan 2024
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/,                                                         // ISO 8601 datetime
+];
+
+function looksLikeDate(s: string): boolean {
+  const t = s.trim();
+  return DATE_PATTERNS.some((re) => re.test(t)) && !isNaN(Date.parse(t));
+}
+
+function inferFieldType(header: string, samples: string[]): FieldType {
+  const h = header.toLowerCase();
+  if (/email/.test(h)) return "email";
+  if (/phone|tel|mobile/.test(h)) return "tel";
+  if (/url|website|link|href/.test(h)) return "url";
+  if (/date|birthday|dob\b|born/.test(h)) return "date";
+  if (/password|passwd|secret/.test(h)) return "password";
+  if (/message|description|notes?|comments?|bio|about|summary|body|details?/.test(h))
+    return "textarea";
+
+  const nonEmpty = samples.filter((s) => s.trim() !== "");
+  if (nonEmpty.length === 0) return "text";
+  if (nonEmpty.some((s) => s.length > 80)) return "textarea";
+  if (nonEmpty.every((s) => /^-?\d+(\.\d+)?$/.test(s.trim()))) return "number";
+  if (nonEmpty.every((s) => looksLikeDate(s))) return "date";
+  if (nonEmpty.every((s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s))) return "email";
+  return "text";
+}
+
+function csvToTemplate(filename: string, headers: string[], rows: string[][]): FormTemplate {
+  const now = Date.now();
+  const rawName = filename.replace(/\.csv$/i, "").replace(/[-_]+/g, " ").trim();
+  const name = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : "Imported Form";
+
+  const fields: FormField[] = headers.map((header, colIdx) => {
+    const samples = rows.map((r) => r[colIdx] ?? "").slice(0, 30);
+    const type = inferFieldType(header, samples);
+    return { ...makeField(type), label: header, placeholder: "" };
+  });
+
+  return { id: uid(), name, description: `Imported from ${filename}`, createdAt: now, updatedAt: now, fields };
+}
+
 // ── Field metadata ────────────────────────────────────────────────────────────
 
 const FIELD_META: Record<
@@ -327,6 +433,15 @@ function IconMenu() {
       <rect width="16" height="1.5" rx="0.75" />
       <rect width="10" height="1.5" rx="0.75" y="5.25" />
       <rect width="16" height="1.5" rx="0.75" y="10.5" />
+    </svg>
+  );
+}
+
+function IconUpload() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8V2M3 5l3-3 3 3" />
+      <path d="M1 9v1.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9" />
     </svg>
   );
 }
@@ -1240,6 +1355,152 @@ function PreviewField({
   );
 }
 
+// ── CSV Dropzone Overlay ──────────────────────────────────────────────────────
+
+function CsvDropzone({
+  onFile,
+  onClose,
+  loading,
+}: {
+  onFile: (file: File) => void;
+  onClose: () => void;
+  loading: boolean;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div
+      onClick={!loading ? onClose : undefined}
+      className="fixed inset-0 z-200 flex items-center justify-center bg-[rgba(0,0,0,0.75)] backdrop-blur-xs"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-[#111] border border-[rgba(255,255,255,0.1)] rounded-[14px] p-7 w-105 max-w-[calc(100vw-2rem)] shadow-[0_32px_80px_rgba(0,0,0,0.8)]"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <p className="text-white font-mono text-[13px] font-bold tracking-widest">IMPORT CSV</p>
+          {!loading && (
+            <button
+              onClick={onClose}
+              className="text-[rgba(255,255,255,0.4)] bg-transparent border-none cursor-pointer text-[20px] leading-none px-1"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* Drop zone */}
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFile(f);
+            e.target.value = "";
+          }}
+        />
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const file = e.dataTransfer.files[0];
+            if (file) onFile(file);
+          }}
+          onClick={() => !loading && inputRef.current?.click()}
+          className={cn(
+            "border-2 border-dashed rounded-xl py-11 px-8 text-center transition-all duration-150",
+            loading ? "cursor-default" : "cursor-pointer",
+            dragging
+              ? "border-[#5AAD6B] bg-[rgba(90,173,107,0.07)]"
+              : loading
+                ? "border-[rgba(90,173,107,0.25)] bg-[rgba(90,173,107,0.03)]"
+                : "border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.02)]",
+          )}
+        >
+          {loading ? (
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-7 h-7 border-2 border-[rgba(90,173,107,0.25)] border-t-[#5AAD6B] rounded-full animate-spin" />
+              <p className="text-[rgba(255,255,255,0.35)] font-mono text-[12px]">Processing…</p>
+            </div>
+          ) : (
+            <>
+              <div
+                className={cn(
+                  "w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-150",
+                  dragging ? "bg-[rgba(90,173,107,0.15)] text-[#5AAD6B]" : "bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.35)]",
+                )}
+              >
+                <IconUpload />
+              </div>
+              <p className="text-[rgba(255,255,255,0.6)] font-mono text-[13px] mb-1">
+                {dragging ? "Drop to import" : "Drop a file here or click to browse"}
+              </p>
+              <p className="text-[rgba(255,255,255,0.25)] font-mono text-[11px] mb-4">
+                First row is used as column headers
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <span className="px-2 py-0.75 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)] rounded text-[rgba(255,255,255,0.3)] font-mono text-[9px] tracking-[0.12em]">
+                  .CSV
+                </span>
+                <span className="text-[rgba(255,255,255,0.15)]">·</span>
+                <span className="text-[rgba(255,255,255,0.3)] font-mono text-[10px]">max 5 MB</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Confirm Delete Overlay ────────────────────────────────────────────────────
+
+function ConfirmDeleteOverlay({
+  message,
+  onConfirm,
+  onCancel,
+}: {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      onClick={onCancel}
+      className="fixed inset-0 z-300 flex items-center justify-center bg-[rgba(0,0,0,0.7)] backdrop-blur-xs"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-[#111] border border-[rgba(255,255,255,0.1)] rounded-[12px] p-6 w-80 shadow-[0_24px_60px_rgba(0,0,0,0.8)]"
+      >
+        <p className="text-[#e0e0e0] font-mono text-[13px] font-bold mb-1.5">Confirm delete</p>
+        <p className="text-[rgba(255,255,255,0.4)] font-mono text-[11px] leading-[1.6] mb-5">{message}</p>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-3.5 py-1.75 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.1)] rounded-[7px] text-[rgba(255,255,255,0.55)] font-mono text-[11px] cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            autoFocus
+            onClick={onConfirm}
+            className="px-3.5 py-1.75 bg-[#E85D7A] border-none rounded-[7px] text-white font-mono text-[11px] font-bold cursor-pointer"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function DynamicFormBuilder() {
@@ -1261,7 +1522,20 @@ export function DynamicFormBuilder() {
   const [previewSubmitted, setPreviewSubmitted] = useState(false);
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [subLayout, setSubLayout] = useState<"table" | "card">("table");
+  const [confirmDelete, setConfirmDelete] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const [csvError, setCsvError] = useState<string | null>(null);
+  const [dropzoneOpen, setDropzoneOpen] = useState(false);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [editingCell, setEditingCell] = useState<{ subId: string; fieldId: string } | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+  const [cardPage, setCardPage] = useState(0);
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const [tableScrollTop, setTableScrollTop] = useState(0);
   const dragIdx = useRef<number | null>(null);
+
+  const CARDS_PER_PAGE = 24;
+  const ROW_HEIGHT = 38; // px — approximate row height for virtualization
+  const TABLE_VIEWPORT_HEIGHT = 520; // px — fixed height of the scrollable table container
 
   // ── Load from IndexedDB ──────────────────────────────────────────────────
   useEffect(() => {
@@ -1341,6 +1615,8 @@ export function DynamicFormBuilder() {
     setMode("build");
     setPreviewSubmitted(false);
     setPreviewValues({});
+    setCardPage(0);
+    setTableScrollTop(0);
     dbGetSubmissions(id).then(setSubmissions);
     if (isMobile) setSidebarOpen(false);
   };
@@ -1422,6 +1698,76 @@ export function DynamicFormBuilder() {
     setDragOverIdx(null);
   };
 
+  const saveEdit = useCallback((subId: string, fieldId: string, value: string) => {
+    setSubmissions((prev) =>
+      prev.map((s) => {
+        if (s.id !== subId) return s;
+        const updated = { ...s, data: { ...s.data, [fieldId]: value } };
+        dbPutSubmission(updated).catch(() => {});
+        return updated;
+      }),
+    );
+    setEditingCell(null);
+  }, []);
+
+  const handleCSVFile = useCallback(
+    (file: File) => {
+      if (file.size > CSV_SIZE_LIMIT) {
+        setCsvError(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum size is 5 MB.`);
+        return;
+      }
+      setCsvLoading(true);
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const text = ev.target?.result as string;
+        const { headers, rows } = parseCSV(text);
+        if (headers.length === 0) {
+          setCsvLoading(false);
+          setCsvError("No columns found — make sure the first row contains headers.");
+          return;
+        }
+        const t = csvToTemplate(file.name, headers, rows);
+
+        const now = Date.now();
+        const dataRows = rows.filter((row) => row.some((cell) => cell.trim() !== ""));
+        const subs: FormSubmission[] = dataRows.map((row, i) => ({
+          id: uid(),
+          templateId: t.id,
+          submittedAt: now - i,
+          data: Object.fromEntries(
+            t.fields.map((field, colIdx) => [field.id, row[colIdx]?.trim() ?? ""]),
+          ),
+        }));
+
+        try {
+          await dbPut(t);
+          await dbPutManySubmissions(subs);
+        } catch {
+          setCsvLoading(false);
+          setCsvError("Failed to save data. Please try again.");
+          return;
+        }
+
+        setTemplates((prev) => [t, ...prev]);
+        setActiveId(t.id);
+        setTemplate(structuredClone(t));
+        setSelectedFieldId(null);
+        setDirty(false);
+        setMode("submissions");
+        setPreviewSubmitted(false);
+        setPreviewValues({});
+        setCardPage(0);
+        setTableScrollTop(0);
+        setSubmissions(subs);
+        setCsvLoading(false);
+        setDropzoneOpen(false);
+        if (isMobile) setSidebarOpen(false);
+      };
+      reader.readAsText(file);
+    },
+    [isMobile],
+  );
+
   const selectedField =
     template?.fields.find((f) => f.id === selectedFieldId) ?? null;
 
@@ -1453,12 +1799,28 @@ export function DynamicFormBuilder() {
           <p className="text-[10px] tracking-[0.13em] text-[rgba(255,255,255,0.25)]">
             TEMPLATES
           </p>
-          <button
-            onClick={newTemplate}
-            className="px-2 py-1 bg-[rgba(77,150,217,0.1)] border border-[rgba(77,150,217,0.18)] rounded-md text-[#4D96D9] cursor-pointer text-[10px] font-mono font-bold"
-          >
-            + NEW
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => !csvLoading && setDropzoneOpen(true)}
+              title="Import CSV"
+              className={cn(
+                "p-1.25 border rounded-md flex items-center transition-all duration-150",
+                csvLoading
+                  ? "bg-[rgba(90,173,107,0.15)] border-[rgba(90,173,107,0.3)] text-[#5AAD6B] cursor-wait"
+                  : "bg-[rgba(90,173,107,0.1)] border-[rgba(90,173,107,0.18)] text-[#5AAD6B] cursor-pointer",
+              )}
+            >
+              {csvLoading
+                ? <div className="w-3 h-3 border border-[rgba(90,173,107,0.4)] border-t-[#5AAD6B] rounded-full animate-spin" />
+                : <IconUpload />}
+            </button>
+            <button
+              onClick={newTemplate}
+              className="px-2 py-1 bg-[rgba(77,150,217,0.1)] border border-[rgba(77,150,217,0.18)] rounded-md text-[#4D96D9] cursor-pointer text-[10px] font-mono font-bold"
+            >
+              + NEW
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
@@ -1502,7 +1864,7 @@ export function DynamicFormBuilder() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteTemplate(t.id);
+                  setConfirmDelete({ message: `Delete "${t.name}"? This cannot be undone.`, onConfirm: () => deleteTemplate(t.id) });
                 }}
                 className="text-[rgba(255,255,255,0.18)] bg-transparent border-none cursor-pointer p-0.75 shrink-0 flex"
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#E85D7A")}
@@ -1650,7 +2012,7 @@ export function DynamicFormBuilder() {
                             selectedFieldId === field.id ? null : field.id,
                           )
                         }
-                        onDelete={() => deleteField(field.id)}
+                        onDelete={() => setConfirmDelete({ message: `Delete the "${field.label || field.type}" field?`, onConfirm: () => deleteField(field.id) })}
                         onDuplicate={() => duplicateField(field.id)}
                         onDragStart={() => handleDragStart(idx)}
                         onDragOver={(e) => handleDragOver(e, idx)}
@@ -1757,91 +2119,194 @@ export function DynamicFormBuilder() {
                         No submissions yet — switch to <strong className="text-[rgba(255,255,255,0.25)]">Preview</strong> to fill the form
                       </div>
                     ) : subLayout === "table" ? (
-                      /* ── Table ── */
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse font-mono">
-                          <thead>
-                            <tr>
-                              <th className={cn(thStyle, "w-32.5")}>Submitted</th>
-                              {dataFields.map((f) => (
-                                <th key={f.id} className={thStyle}>{f.label}</th>
-                              ))}
-                              <th className={cn(thStyle, "w-10")} />
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {submissions.map((sub, si) => (
-                              <tr
-                                key={sub.id}
-                                className={si % 2 === 0 ? "bg-[rgba(255,255,255,0.01)]" : "bg-transparent"}
-                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)")}
-                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = si % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent")}
-                              >
-                                <td className={tdStyle}>
-                                  <span className="text-[rgba(255,255,255,0.3)] text-[10px]">{formatDate(sub.submittedAt)}</span>
-                                </td>
-                                {dataFields.map((f) => (
-                                  <td key={f.id} className={tdStyle}>
-                                    <span className="text-[#c8c8c8] text-[11px]">{formatVal(sub.data[f.id])}</span>
-                                  </td>
-                                ))}
-                                <td className={cn(tdStyle, "text-right")}>
-                                  <button
-                                    onClick={() => deleteSubmission(sub.id)}
-                                    className="bg-transparent border-none cursor-pointer text-[rgba(255,255,255,0.2)] inline-flex p-1"
-                                    onMouseEnter={(e) => (e.currentTarget.style.color = "#E85D7A")}
-                                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}
-                                    title="Delete"
-                                  >
-                                    <IconTrash />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      /* ── Card grid ── */
-                      <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
-                        {submissions.map((sub) => (
+                      /* ── Table (virtualized) ── */
+                      (() => {
+                        const overscan = 5;
+                        const visibleStart = Math.max(0, Math.floor(tableScrollTop / ROW_HEIGHT) - overscan);
+                        const visibleEnd = Math.min(
+                          submissions.length,
+                          Math.ceil((tableScrollTop + TABLE_VIEWPORT_HEIGHT) / ROW_HEIGHT) + overscan,
+                        );
+                        const visibleRows = submissions.slice(visibleStart, visibleEnd);
+                        const topSpacer = visibleStart * ROW_HEIGHT;
+                        const bottomSpacer = (submissions.length - visibleEnd) * ROW_HEIGHT;
+                        return (
                           <div
-                            key={sub.id}
-                            className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.07)] rounded-xl p-4 flex flex-col gap-2.5 transition-colors duration-130"
-                            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.14)")}
-                            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)")}
+                            ref={tableScrollRef}
+                            className="overflow-auto"
+                            style={{ height: TABLE_VIEWPORT_HEIGHT, overflowX: "auto" }}
+                            onScroll={(e) => setTableScrollTop((e.currentTarget as HTMLElement).scrollTop)}
                           >
-                            {/* Card header */}
-                            <div className="flex justify-between items-start">
-                              <span className="text-[rgba(255,255,255,0.25)] font-mono text-[9px] tracking-[0.08em]">
-                                {formatDate(sub.submittedAt)}
-                              </span>
-                              <button
-                                onClick={() => deleteSubmission(sub.id)}
-                                className="bg-transparent border-none cursor-pointer text-[rgba(255,255,255,0.18)] flex p-0.5"
-                                onMouseEnter={(e) => (e.currentTarget.style.color = "#E85D7A")}
-                                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.18)")}
-                                title="Delete"
-                              >
-                                <IconTrash />
-                              </button>
-                            </div>
-                            {/* Fields */}
-                            <div className="flex flex-col gap-2">
-                              {dataFields.map((f) => (
-                                <div key={f.id}>
-                                  <p className="text-[rgba(255,255,255,0.3)] font-mono text-[9px] tracking-[0.08em] mb-0.5">
-                                    {f.label.toUpperCase()}
-                                  </p>
-                                  <p className="text-[#d0d0d0] font-mono text-[12px] leading-normal">
-                                    {formatVal(sub.data[f.id])}
-                                  </p>
+                            <table className="w-full border-collapse font-mono">
+                              <thead className="sticky top-0 z-10 bg-[#0f0f0f]">
+                                <tr>
+                                  <th className={cn(thStyle, "w-32.5")}>Submitted</th>
+                                  {dataFields.map((f) => (
+                                    <th key={f.id} className={thStyle}>{f.label}</th>
+                                  ))}
+                                  <th className={cn(thStyle, "w-10")} />
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {topSpacer > 0 && (
+                                  <tr style={{ height: topSpacer }}><td colSpan={dataFields.length + 2} /></tr>
+                                )}
+                                {visibleRows.map((sub, idx) => {
+                                  const si = visibleStart + idx;
+                                  return (
+                                    <tr
+                                      key={sub.id}
+                                      style={{ height: ROW_HEIGHT }}
+                                      className={si % 2 === 0 ? "bg-[rgba(255,255,255,0.01)]" : "bg-transparent"}
+                                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)")}
+                                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = si % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent")}
+                                    >
+                                      <td className={tdStyle}>
+                                        <span className="text-[rgba(255,255,255,0.3)] text-[10px]">{formatDate(sub.submittedAt)}</span>
+                                      </td>
+                                      {dataFields.map((f) => {
+                                        const isEditing = editingCell?.subId === sub.id && editingCell?.fieldId === f.id;
+                                        return (
+                                          <td
+                                            key={f.id}
+                                            className={cn(
+                                              tdStyle,
+                                              "cursor-text",
+                                              isEditing && "bg-[rgba(77,150,217,0.07)]! overflow-visible! whitespace-normal",
+                                            )}
+                                            onClick={() => {
+                                              if (!isEditing) {
+                                                setEditingCell({ subId: sub.id, fieldId: f.id });
+                                                setEditingValue(String(sub.data[f.id] ?? ""));
+                                              }
+                                            }}
+                                          >
+                                            {isEditing ? (
+                                              <div className="flex flex-col gap-1.5">
+                                                <input
+                                                  autoFocus
+                                                  value={editingValue}
+                                                  onChange={(e) => setEditingValue(e.target.value)}
+                                                  onKeyDown={(e) => {
+                                                    if (e.key === "Enter") saveEdit(sub.id, f.id, editingValue);
+                                                    if (e.key === "Escape") setEditingCell(null);
+                                                  }}
+                                                  className="w-full min-w-30 bg-transparent border-none outline-none text-[#e0e0e0] text-[11px] font-mono"
+                                                />
+                                                <div className="flex gap-1">
+                                                  <button
+                                                    onMouseDown={(e) => { e.preventDefault(); saveEdit(sub.id, f.id, editingValue); }}
+                                                    className="px-1.5 py-0.5 bg-[#4D96D9] border-none rounded text-white font-mono text-[10px] cursor-pointer leading-none"
+                                                  >
+                                                    Save
+                                                  </button>
+                                                  <button
+                                                    onMouseDown={(e) => { e.preventDefault(); setEditingCell(null); }}
+                                                    className="px-1.5 py-0.5 bg-[rgba(255,255,255,0.07)] border-none rounded text-[rgba(255,255,255,0.45)] font-mono text-[10px] cursor-pointer leading-none"
+                                                  >
+                                                    Cancel
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <span className="text-[#c8c8c8] text-[11px]">{formatVal(sub.data[f.id])}</span>
+                                            )}
+                                          </td>
+                                        );
+                                      })}
+                                      <td className={cn(tdStyle, "text-right")}>
+                                        <button
+                                          onClick={() => setConfirmDelete({ message: "Delete this submission?", onConfirm: () => deleteSubmission(sub.id) })}
+                                          className="bg-transparent border-none cursor-pointer text-[rgba(255,255,255,0.2)] inline-flex p-1"
+                                          onMouseEnter={(e) => (e.currentTarget.style.color = "#E85D7A")}
+                                          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}
+                                          title="Delete"
+                                        >
+                                          <IconTrash />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                                {bottomSpacer > 0 && (
+                                  <tr style={{ height: bottomSpacer }}><td colSpan={dataFields.length + 2} /></tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      /* ── Card grid (paginated) ── */
+                      (() => {
+                        const totalPages = Math.ceil(submissions.length / CARDS_PER_PAGE);
+                        const pageStart = cardPage * CARDS_PER_PAGE;
+                        const pageSubmissions = submissions.slice(pageStart, pageStart + CARDS_PER_PAGE);
+                        return (
+                          <div className="flex flex-col gap-4">
+                            <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
+                              {pageSubmissions.map((sub) => (
+                                <div
+                                  key={sub.id}
+                                  className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.07)] rounded-xl p-4 flex flex-col gap-2.5 transition-colors duration-130"
+                                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.14)")}
+                                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)")}
+                                >
+                                  {/* Card header */}
+                                  <div className="flex justify-between items-start">
+                                    <span className="text-[rgba(255,255,255,0.25)] font-mono text-[9px] tracking-[0.08em]">
+                                      {formatDate(sub.submittedAt)}
+                                    </span>
+                                    <button
+                                      onClick={() => setConfirmDelete({ message: "Delete this submission?", onConfirm: () => deleteSubmission(sub.id) })}
+                                      className="bg-transparent border-none cursor-pointer text-[rgba(255,255,255,0.18)] flex p-0.5"
+                                      onMouseEnter={(e) => (e.currentTarget.style.color = "#E85D7A")}
+                                      onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.18)")}
+                                      title="Delete"
+                                    >
+                                      <IconTrash />
+                                    </button>
+                                  </div>
+                                  {/* Fields */}
+                                  <div className="flex flex-col gap-2">
+                                    {dataFields.map((f) => (
+                                      <div key={f.id}>
+                                        <p className="text-[rgba(255,255,255,0.3)] font-mono text-[9px] tracking-[0.08em] mb-0.5">
+                                          {f.label.toUpperCase()}
+                                        </p>
+                                        <p className="text-[#d0d0d0] font-mono text-[12px] leading-normal">
+                                          {formatVal(sub.data[f.id])}
+                                        </p>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               ))}
                             </div>
+                            {totalPages > 1 && (
+                              <div className="flex items-center justify-center gap-2 pt-1">
+                                <button
+                                  onClick={() => setCardPage((p) => Math.max(0, p - 1))}
+                                  disabled={cardPage === 0}
+                                  className="px-3 py-1.5 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)] rounded-lg text-[rgba(255,255,255,0.4)] font-mono text-[11px] cursor-pointer disabled:opacity-30 disabled:cursor-default"
+                                >
+                                  ←
+                                </button>
+                                <span className="text-[rgba(255,255,255,0.3)] font-mono text-[11px]">
+                                  {cardPage + 1} / {totalPages}
+                                </span>
+                                <button
+                                  onClick={() => setCardPage((p) => Math.min(totalPages - 1, p + 1))}
+                                  disabled={cardPage >= totalPages - 1}
+                                  className="px-3 py-1.5 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)] rounded-lg text-[rgba(255,255,255,0.4)] font-mono text-[11px] cursor-pointer disabled:opacity-30 disabled:cursor-default"
+                                >
+                                  →
+                                </button>
+                              </div>
+                            )}
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })()
                     )}
                   </div>
                 );
@@ -1990,6 +2455,49 @@ export function DynamicFormBuilder() {
       {/* Field picker modal */}
       {pickerOpen && (
         <FieldTypePicker onPick={addField} onClose={() => setPickerOpen(false)} />
+      )}
+
+      {/* CSV dropzone overlay */}
+      {dropzoneOpen && (
+        <CsvDropzone
+          onFile={handleCSVFile}
+          onClose={() => setDropzoneOpen(false)}
+          loading={csvLoading}
+        />
+      )}
+
+      {/* CSV error overlay */}
+      {csvError && (
+        <div
+          onClick={() => setCsvError(null)}
+          className="fixed inset-0 z-300 flex items-center justify-center bg-[rgba(0,0,0,0.7)] backdrop-blur-xs"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#111] border border-[rgba(255,255,255,0.1)] rounded-[12px] p-6 w-80 shadow-[0_24px_60px_rgba(0,0,0,0.8)]"
+          >
+            <p className="text-[#E85D7A] font-mono text-[13px] font-bold mb-1.5">Upload failed</p>
+            <p className="text-[rgba(255,255,255,0.4)] font-mono text-[11px] leading-[1.6] mb-5">{csvError}</p>
+            <div className="flex justify-end">
+              <button
+                autoFocus
+                onClick={() => setCsvError(null)}
+                className="px-3.5 py-1.75 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.1)] rounded-[7px] text-[rgba(255,255,255,0.55)] font-mono text-[11px] cursor-pointer"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm delete overlay */}
+      {confirmDelete && (
+        <ConfirmDeleteOverlay
+          message={confirmDelete.message}
+          onConfirm={() => { confirmDelete.onConfirm(); setConfirmDelete(null); }}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
     </div>
   );

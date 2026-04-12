@@ -8,7 +8,7 @@ function cellSize() { return window.innerWidth < 640 ? 120 : 200; }
 const RADIUS = 8;
 const FRICTION = 0.92;
 
-const KLIPY_KEY = "NZqHwePxVQFTx8ZyCoFyUDcf36zx6p5S2hEhWw5NnppAl2BqCwgZsy1EIFRtpb44";
+const KLIPY_KEY = process.env.NEXT_PUBLIC_KLIPPY_KEY
 const KLIPY_CID = "showcase";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ function drawCell(
     ctx.fillText(label, x + cw / 2, y + cw / 2 - 8);
     ctx.font = "400 9px monospace";
     ctx.fillStyle = "rgba(255,255,255,0.4)";
-    ctx.fillText("↗ open", x + cw / 2, y + cw / 2 + 10);
+    ctx.fillText("⎘ copy", x + cw / 2, y + cw / 2 + 10);
   }
 
   ctx.restore();
@@ -140,6 +140,16 @@ export function GodlyGifs() {
   const [expanded,  setExpanded]  = useState(false);
   const [query,     setQuery]     = useState("");
   const [searching, setSearching] = useState(false);
+  const [toast,     setToast]     = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (msg: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(msg);
+    toastTimer.current = setTimeout(() => setToast(null), 2500);
+  };
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   // ── Load gifs (tears down old videos) ────────────────────────────────────
   const loadGifs = (gifs: GifItem[]) => {
@@ -251,8 +261,8 @@ export function GodlyGifs() {
           const idx = (((col * 7 + row * 13) % N) + N) % N;
           const gif = gifs[idx];
           if (!gif?.mp4Url) continue;
-          const fullyVisible = sx >= 0 && sy >= 0 && sx + cw <= W && sy + cw <= H;
-          if (fullyVisible) nowPlaying.add(idx);
+          const anyVisible = sx + cw > 0 && sy + cw > 0 && sx < W && sy < H;
+          if (anyVisible) nowPlaying.add(idx);
           const video = videosRef.current[idx];
           const hover = mx >= sx && mx <= sx + cw && my >= sy && my <= sy + cw;
           drawCell(ctx, sx, sy, cw, gif, video, hover);
@@ -263,7 +273,7 @@ export function GodlyGifs() {
       videosRef.current.forEach((vid, i) => {
         if (!vid) return;
         if (nowPlaying.has(i) && !prev.has(i))      vid.play().catch(() => {});
-        else if (!nowPlaying.has(i) && prev.has(i)) vid.pause();
+        else if (!nowPlaying.has(i) && prev.has(i)) { vid.pause(); vid.currentTime = 0; }
       });
       visibleRef.current = nowPlaying;
 
@@ -310,7 +320,10 @@ export function GodlyGifs() {
         if (cx >= sx && cx <= sx + cw && cy >= sy && cy <= sy + cw) {
           const idx = (((col * 7 + row * 13) % N) + N) % N;
           const gif = gifsRef.current[idx];
-          if (gif?.pageUrl) window.open(gif.pageUrl, "_blank", "noopener");
+          if (gif?.mp4Url) {
+            navigator.clipboard.writeText(gif.mp4Url).catch(() => {});
+            showToastRef.current(`copied link — ${gif.title}`);
+          }
         }
       }
     };
@@ -469,6 +482,30 @@ export function GodlyGifs() {
           </button>
         </div>
       </div>
+
+      {/* ── Toast ────────────────────────────────────────────────────────── */}
+      {toast && (
+        <div
+          style={{
+            position:        "fixed",
+            bottom:          76,
+            left:            "50%",
+            transform:       "translateX(-50%)",
+            background:      "rgba(8,8,8,0.88)",
+            backdropFilter:  "blur(20px)",
+            border:          "1px solid rgba(255,255,255,0.12)",
+            color:           "#fff",
+            fontFamily:      "monospace",
+            fontSize:        11,
+            padding:         "8px 16px",
+            borderRadius:    9999,
+            whiteSpace:      "nowrap",
+            pointerEvents:   "none",
+          }}
+        >
+          {toast}
+        </div>
+      )}
 
       {/* Videos must be in the DOM for the browser to decode frames */}
       <div ref={stageRef} aria-hidden="true" style={{ position: "fixed", top: -9999, left: -9999, pointerEvents: "none" }} />

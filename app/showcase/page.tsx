@@ -122,12 +122,6 @@ const VIEWS: ViewDef[] = [
             }}
           />
         ))}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(to bottom, transparent 60%, #080808)",
-          }}
-        />
       </div>
     ),
     component: <GodlyMusic />,
@@ -172,12 +166,6 @@ const VIEWS: ViewDef[] = [
             </svg>
           </div>
         ))}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(to bottom, transparent 60%, #080808)",
-          }}
-        />
       </div>
     ),
     component: <GodlyClips />,
@@ -219,12 +207,6 @@ const VIEWS: ViewDef[] = [
             {r.label}
           </div>
         ))}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(to bottom, transparent 50%, #04080f)",
-          }}
-        />
       </div>
     ),
     component: <GodlyWeather />,
@@ -306,12 +288,6 @@ const VIEWS: ViewDef[] = [
             />
           </div>
         ))}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(to bottom, transparent 60%, #080808)",
-          }}
-        />
       </div>
     ),
     component: <GodlyGifs />,
@@ -347,10 +323,6 @@ const VIEWS: ViewDef[] = [
             <div style={{ flex: 1, height: 2, background: "rgba(255,255,255,0.1)", borderRadius: 1 }} />
           </div>
         ))}
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(to bottom, transparent 55%, #0a0a0a)" }}
-        />
       </div>
     ),
     component: <DynamicFormBuilder />,
