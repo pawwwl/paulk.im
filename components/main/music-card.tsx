@@ -11,35 +11,20 @@ const RADIUS = 8;
 const FRICTION = 0.92;
 
 const ARTISTS: [string, number][] = [
-  ["Kendrick Lamar", 1],
-  ["Kanye West", 1],
-  ["The Beatles", 1],
-  ["Pink Floyd", 1],
-  ["Bon Iver", 4],
-  ["LCD Soundsystem", 1],
-  ["Aphex Twin", 1],
-  ["Daft Punk", 4],
-  ["SZA", 1],
-  ["Four Tet", 1],
-  ["Thundercat", 1],
-  ["Portishead", 1],
-  ["Massive Attack", 4],
-  ["DJ Snake", 4],
-  ["Lane 8", 5],
-  ["Sultan + Shepard", 5],
-  ["Chris Lake", 5],
-  ["Linkin Park", 3],
-  ["Justice", 5],
-  ["Sammy Virji", 4],
-  ["SG Lewis", 5],
-  ["Elderbrook", 5],
-  ["The Weeknd", 3],
-  ["Emancipator", 5],
-  ["Christian Loeffler", 5],
-  ["ODESZA", 5],
-  ["Aaliyah", 4],
-  ["Brandy", 4],
-  ["TLC", 4],
+  ["Daft Punk", 10],
+  ["Massive Attack", 5],
+  ["Lane 8", 10],
+  ["Sultan + Shepard", 10],
+  ["Linkin Park", 10],
+  ["Justice", 10],
+  ["SG Lewis", 10],
+  ["Elderbrook", 10],
+  ["The Weeknd", 10],
+  ["Emancipator", 10],
+  ["ODESZA", 10],
+  ["Aaliyah", 10],
+  ["Brandy", 10],
+  ["TLC", 10],
 ];
 
 type Album = {
@@ -330,6 +315,7 @@ export function MusicCard() {
   const [cursor, setCursor] = useState<"grab" | "grabbing">("grab");
   const [loaded, setLoaded] = useState(false);
   const [playingId, setPlayingId] = useState<number | null>(null);
+  const [playingAlbum, setPlayingAlbum] = useState<{ artist: string; track: string } | null>(null);
   const [hasInteracted, setHasInteracted] = useState(false);
 
   useEffect(() => {
@@ -355,6 +341,7 @@ export function MusicCard() {
       audioRef.current = null;
       playingIdx.current = null;
       setPlayingId(null);
+      setPlayingAlbum(null);
       return;
     }
 
@@ -365,11 +352,13 @@ export function MusicCard() {
     audio.addEventListener("ended", () => {
       playingIdx.current = null;
       setPlayingId(null);
+      setPlayingAlbum(null);
     });
 
     audioRef.current = audio;
     playingIdx.current = idx;
     setPlayingId(idx);
+    setPlayingAlbum({ artist: album.artist, track: album.track });
   };
 
   useEffect(() => {
@@ -620,7 +609,52 @@ export function MusicCard() {
         );
       })}
 
+      {/* ── Now playing ticker ────────────────────────────────────────────── */}
+      <div
+        aria-live="polite"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          overflow: "hidden",
+          background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
+          transform: playingAlbum ? "translateY(0)" : "translateY(100%)",
+          transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)",
+          pointerEvents: "none",
+        }}
+      >
+        {playingAlbum && (
+          <div
+            key={`${playingAlbum.artist}-${playingAlbum.track}`}
+            style={{
+              display: "inline-block",
+              whiteSpace: "nowrap",
+              paddingLeft: "100%",
+              animation: "music-ticker 14s linear infinite",
+              fontSize: 11,
+              fontFamily: "monospace",
+              color: "rgba(255,255,255,0.85)",
+              letterSpacing: "0.03em",
+            }}
+          >
+            <span style={{ color: "rgba(255,255,255,0.55)", marginRight: 6 }}>♪</span>
+            <span style={{ fontWeight: 600 }}>{playingAlbum.artist}</span>
+            <span style={{ color: "rgba(255,255,255,0.4)", margin: "0 8px" }}>—</span>
+            <span>{playingAlbum.track}</span>
+            <span style={{ margin: "0 40px", color: "rgba(255,255,255,0.2)" }}>·</span>
+          </div>
+        )}
+      </div>
+
       <style>{`
+        @keyframes music-ticker {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-100%); }
+        }
         @keyframes drag-hint-left {
           0%, 100% { transform: translateX(0); opacity: 0.45; }
           50% { transform: translateX(-4px); opacity: 0.9; }
