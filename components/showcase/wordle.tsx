@@ -374,10 +374,10 @@ export function WordleGame() {
 
       {/* Header */}
       <div
-        className="font-mono text-[11px] uppercase tracking-[0.35em] mb-5"
+        className="font-mono text-[11px] uppercase tracking-[0.35em] mb-1"
         style={{ color: "rgba(255,255,255,0.25)", letterSpacing: "0.4em" }}
       >
-        WORDLE
+        enter your guess
       </div>
 
       {/* Toast message */}

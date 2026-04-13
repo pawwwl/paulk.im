@@ -49,18 +49,13 @@ export default function ShowcaseViewPage({
         {/* Menu button */}
         <button
           onClick={() => setDrawerOpen(true)}
-          className="flex flex-col justify-center gap-[5px] w-9 h-9 items-center rounded"
+          className="flex flex-col justify-center gap-[5px] w-6 h-6 items-center rounded cursor-pointer"
           aria-label="Open menu"
-          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
         >
-          <span
-            className="block w-4"
-            style={{ height: 1.5, background: "rgba(255,255,255,0.85)", borderRadius: 1 }}
-          />
-          <span
-            className="block w-4"
-            style={{ height: 1.5, background: "rgba(255,255,255,0.85)", borderRadius: 1 }}
-          />
+          <span className="block w-4 bg-accent-pink h-[1.5px] rounded-2xl" />
+          <span className="block w-4 bg-accent-pink h-[1.5px] rounded-2xl" />
+
+          <span className="block w-4 bg-accent-pink h-[1.5px] rounded-2xl" />
         </button>
       </div>
 
@@ -82,7 +77,13 @@ export default function ShowcaseViewPage({
         >
           {nextView.label}
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M4.5 2.5L8 6l-3.5 3.5"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </Link>
       </div>
@@ -125,8 +126,24 @@ export default function ShowcaseViewPage({
             style={{ color: "rgba(255,255,255,0.35)" }}
           >
             <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-              <line x1="1" y1="1" x2="10" y2="10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              <line x1="10" y1="1" x2="1" y2="10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              <line
+                x1="1"
+                y1="1"
+                x2="10"
+                y2="10"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              />
+              <line
+                x1="10"
+                y1="1"
+                x2="1"
+                y2="10"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -142,7 +159,9 @@ export default function ShowcaseViewPage({
                 onClick={() => setDrawerOpen(false)}
                 className="flex items-center gap-3 px-5 py-3 transition-colors"
                 style={{
-                  background: isActive ? "rgba(255,255,255,0.05)" : "transparent",
+                  background: isActive
+                    ? "rgba(255,255,255,0.05)"
+                    : "transparent",
                   borderLeft: `2px solid ${isActive ? "#00e5ff" : "transparent"}`,
                 }}
               >
@@ -159,7 +178,9 @@ export default function ShowcaseViewPage({
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span
                     className="font-mono text-[11px] uppercase tracking-[0.18em]"
-                    style={{ color: isActive ? "#00e5ff" : "rgba(255,255,255,0.7)" }}
+                    style={{
+                      color: isActive ? "#00e5ff" : "rgba(255,255,255,0.7)",
+                    }}
                   >
                     {v.label}
                   </span>

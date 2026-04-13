@@ -7,13 +7,36 @@ const TOTAL_CARDS = 40;
 const NUM_PAIRS = TOTAL_CARDS / 2; // 20
 
 const EMOJIS = [
-  "🌟", "🎨", "🦋", "🌈", "🔮", "🎭", "🦄", "🌸", "⚡", "🎪",
-  "🌊", "🎯", "🔥", "💫", "🎸", "🦊", "🌙", "🎵", "🍀", "🦁",
+  "🌟",
+  "🎨",
+  "🦋",
+  "🌈",
+  "🔮",
+  "🎭",
+  "🦄",
+  "🌸",
+  "⚡",
+  "🎪",
+  "🌊",
+  "🎯",
+  "🔥",
+  "💫",
+  "🎸",
+  "🦊",
+  "🌙",
+  "🎵",
+  "🍀",
+  "🦁",
 ];
 
 // Factor pairs [columns, rows] for 40 — pick the one whose aspect ratio
 // best matches the viewport.
-const LAYOUTS: [number, number][] = [[4, 10], [5, 8], [8, 5], [10, 4]];
+const LAYOUTS: [number, number][] = [
+  [4, 10],
+  [5, 8],
+  [8, 5],
+  [10, 4],
+];
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -27,7 +50,9 @@ function shuffle<T>(arr: T[]): T[] {
 function getGridDims(width: number, height: number) {
   const ratio = width / height;
   const [columns, rows] = LAYOUTS.reduce((best, pair) =>
-    Math.abs(pair[0] / pair[1] - ratio) < Math.abs(best[0] / best[1] - ratio) ? pair : best
+    Math.abs(pair[0] / pair[1] - ratio) < Math.abs(best[0] / best[1] - ratio)
+      ? pair
+      : best,
   );
   return { columns, rows };
 }
@@ -40,7 +65,10 @@ interface Card {
 function makeCards(): Card[] {
   const pairs: Card[] = [];
   for (let i = 0; i < NUM_PAIRS; i++) {
-    pairs.push({ emoji: EMOJIS[i], pairId: i }, { emoji: EMOJIS[i], pairId: i });
+    pairs.push(
+      { emoji: EMOJIS[i], pairId: i },
+      { emoji: EMOJIS[i], pairId: i },
+    );
   }
   return shuffle(pairs);
 }
@@ -61,14 +89,20 @@ export function StaggeredGrid() {
   const [flipped, setFlipped] = useState<Set<number>>(new Set());
   const [matched, setMatched] = useState<Set<number>>(new Set());
   const [selected, setSelected] = useState<number[]>([]);
-  const [flash, setFlash] = useState<{ indices: number[]; kind: "success" | "fail" } | null>(null);
+  const [flash, setFlash] = useState<{
+    indices: number[];
+    kind: "success" | "fail";
+  } | null>(null);
   const [bgMode, setBgMode] = useState<BgMode>("default");
   const [won, setWon] = useState(false);
   const [rain, setRain] = useState<RainDrop[]>([]);
   const locked = useRef(false);
 
   const startGame = useCallback(() => {
-    const { columns, rows } = getGridDims(window.innerWidth, window.innerHeight);
+    const { columns, rows } = getGridDims(
+      window.innerWidth,
+      window.innerHeight,
+    );
     setDims({ columns, rows });
     setCards(makeCards());
     setFlipped(new Set());
@@ -116,7 +150,7 @@ export function StaggeredGrid() {
                     x: Math.random() * 100,
                     delay: Math.random() * 5,
                     duration: 2.5 + Math.random() * 3,
-                  }))
+                  })),
                 );
               }
               return next;
@@ -149,7 +183,7 @@ export function StaggeredGrid() {
         }
       }
     },
-    [cards, flipped, matched, selected]
+    [cards, flipped, matched, selected],
   );
 
   const { columns, rows } = dims;
@@ -162,7 +196,8 @@ export function StaggeredGrid() {
         className="absolute inset-0"
         style={{
           animation: "sg-bg-pan 10s linear infinite",
-          background: "linear-gradient(to right, rgb(98,0,234), rgb(236,64,122), rgb(98,0,234))",
+          background:
+            "linear-gradient(to right, rgb(98,0,234), rgb(236,64,122), rgb(98,0,234))",
           backgroundSize: "200%",
           opacity: bgMode === "default" ? 1 : 0,
           transition: "opacity 350ms ease",
@@ -172,7 +207,8 @@ export function StaggeredGrid() {
         className="absolute inset-0"
         style={{
           animation: "sg-bg-pan 3.5s linear infinite",
-          background: "linear-gradient(to right, rgb(0,200,100), rgb(255,220,0), rgb(80,220,120))",
+          background:
+            "linear-gradient(to right, rgb(0,200,100), rgb(255,220,0), rgb(80,220,120))",
           backgroundSize: "200%",
           opacity: bgMode === "success" ? 1 : 0,
           transition: "opacity 300ms ease",
@@ -182,7 +218,8 @@ export function StaggeredGrid() {
         className="absolute inset-0"
         style={{
           animation: "sg-bg-pan 2.5s linear infinite",
-          background: "linear-gradient(to right, rgb(170,0,50), rgb(20,20,100), rgb(170,0,50))",
+          background:
+            "linear-gradient(to right, rgb(170,0,50), rgb(20,20,100), rgb(170,0,50))",
           backgroundSize: "200%",
           opacity: bgMode === "fail" ? 1 : 0,
           transition: "opacity 300ms ease",
@@ -204,7 +241,12 @@ export function StaggeredGrid() {
           const isFlipped = flipped.has(i) || matched.has(i);
           const isMatched = matched.has(i);
           const flashKind = flash?.indices.includes(i) ? flash.kind : null;
-          const isClickable = !!card && !isMatched && !locked.current && !flipped.has(i) && selected.length < 2;
+          const isClickable =
+            !!card &&
+            !isMatched &&
+            !locked.current &&
+            !flipped.has(i) &&
+            selected.length < 2;
 
           return (
             <div
@@ -254,14 +296,15 @@ export function StaggeredGrid() {
                   }}
                 >
                   <span
+                    className="text-4xl"
                     style={{
                       display: "inline-block",
                       animation:
                         flashKind === "success"
                           ? "sg-match-burst 750ms cubic-bezier(0.34,1.56,0.64,1) both"
                           : flashKind === "fail"
-                          ? "sg-fail-shake 500ms ease both"
-                          : undefined,
+                            ? "sg-fail-shake 500ms ease both"
+                            : undefined,
                     }}
                   >
                     {card?.emoji}
@@ -277,7 +320,11 @@ export function StaggeredGrid() {
       {won && (
         <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ zIndex: 30, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(3px)" }}
+          style={{
+            zIndex: 30,
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(3px)",
+          }}
         >
           {/* Raining emojis */}
           {rain.map(({ id, emoji, x, delay, duration }) => (
@@ -311,20 +358,36 @@ export function StaggeredGrid() {
               boxShadow: "0 8px 60px rgba(0,0,0,0.5)",
             }}
           >
-            <div style={{ fontSize: "4.5rem", marginBottom: "0.4rem", animation: "sg-trophy-spin 1s 700ms cubic-bezier(0.34,1.56,0.64,1) both" }}>🏆</div>
+            <div
+              style={{
+                fontSize: "4.5rem",
+                marginBottom: "0.4rem",
+                animation:
+                  "sg-trophy-spin 1s 700ms cubic-bezier(0.34,1.56,0.64,1) both",
+              }}
+            >
+              🏆
+            </div>
             <div
               style={{
                 fontSize: "1.9rem",
                 fontWeight: 800,
                 color: "white",
-                textShadow: "0 0 30px rgba(255,215,0,0.9), 0 0 60px rgba(255,215,0,0.4)",
+                textShadow:
+                  "0 0 30px rgba(255,215,0,0.9), 0 0 60px rgba(255,215,0,0.4)",
                 marginBottom: "0.3rem",
                 letterSpacing: "-0.01em",
               }}
             >
               Congratulations!
             </div>
-            <div style={{ color: "rgba(255,255,255,0.65)", fontSize: "1rem", marginBottom: "1.8rem" }}>
+            <div
+              style={{
+                color: "rgba(255,255,255,0.65)",
+                fontSize: "1rem",
+                marginBottom: "1.8rem",
+              }}
+            >
               You matched every pair.
             </div>
             <button
@@ -333,7 +396,8 @@ export function StaggeredGrid() {
                 padding: "0.75rem 2.2rem",
                 borderRadius: "2rem",
                 border: "none",
-                background: "linear-gradient(to right, rgb(98,0,234), rgb(236,64,122))",
+                background:
+                  "linear-gradient(to right, rgb(98,0,234), rgb(236,64,122))",
                 color: "white",
                 fontSize: "1rem",
                 fontWeight: 700,
