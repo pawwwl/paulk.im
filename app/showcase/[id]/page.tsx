@@ -16,7 +16,6 @@ export default function ShowcaseViewPage({
   if (currentIndex === -1) notFound();
 
   const view = VIEWS[currentIndex];
-  const nextView = VIEWS[(currentIndex + 1) % VIEWS.length];
 
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -62,30 +61,6 @@ export default function ShowcaseViewPage({
       {/* View content */}
       <div className="flex-1 overflow-hidden relative">
         {view.component}
-
-        {/* Next view button */}
-        <Link
-          href={`/showcase/${nextView.id}`}
-          className="absolute bottom-5 right-4 flex items-center gap-2 rounded-full font-mono text-[9px] uppercase tracking-[0.18em] pl-3 pr-2 py-2"
-          style={{
-            background: "rgba(20,20,20,0.75)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            color: "rgba(255,255,255,0.45)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-        >
-          {nextView.label}
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path
-              d="M4.5 2.5L8 6l-3.5 3.5"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </Link>
       </div>
 
       {/* Drawer backdrop */}
