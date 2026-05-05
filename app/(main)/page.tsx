@@ -2,11 +2,13 @@ import {
   LocationCard,
   Calendar,
   ChatWidget,
+  HireSection,
   PixelImage,
   ProfileWave,
   GlitchText,
   TimelineSectionV2,
   MusicCard,
+  ShowcaseSection,
 } from "@/components/main";
 
 import Image from "next/image";
@@ -137,6 +139,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <ShowcaseSection />
+      <HireSection />
       {/* </main> */}
     </>
   );

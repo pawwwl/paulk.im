@@ -284,6 +284,10 @@ export function TimelineSectionV2() {
     rotAnimRef.current = requestAnimationFrame(step);
   };
 
+  useEffect(() => {
+    setTimeout(() => goTo(0), 500);
+  }, []);
+
   // Auto-rotate loop — direct DOM
   useEffect(() => {
     if (!autoRotate) return;
@@ -480,7 +484,7 @@ export function TimelineSectionV2() {
       <div className="flex items-center mt-8">
         <div className="relative inline-flex">
           <button
-            className="cal-border-glow relative px-8 py-3 font-mono text-xs tracking-widest border border-white/20 text-white/50 hover:text-white hover:border-white/50 transition-colors"
+            className="cal-border-glow relative px-10 py-3.5 font-mono text-xs tracking-widest border-2 border-white/70 text-white font-semibold hover:border-white hover:bg-white/10 active:scale-95 transition-all duration-150 shadow-[0_0_18px_rgba(255,255,255,0.12)]"
             onClick={advance}
           >
             {activeId === null

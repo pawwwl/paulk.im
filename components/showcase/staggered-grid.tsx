@@ -96,9 +96,16 @@ export function StaggeredGrid() {
   const [bgMode, setBgMode] = useState<BgMode>("default");
   const [won, setWon] = useState(false);
   const [rain, setRain] = useState<RainDrop[]>([]);
+  const [mistakes, setMistakes] = useState(0);
+  const [time, setTime] = useState(0);
   const locked = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const gameStarted = useRef(false);
 
   const startGame = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    gameStarted.current = false;
     const { columns, rows } = getGridDims(
       window.innerWidth,
       window.innerHeight,
@@ -112,6 +119,8 @@ export function StaggeredGrid() {
     setBgMode("default");
     setWon(false);
     setRain([]);
+    setMistakes(0);
+    setTime(0);
     locked.current = false;
   }, []);
 
@@ -121,12 +130,24 @@ export function StaggeredGrid() {
     return () => window.removeEventListener("resize", startGame);
   }, [startGame]);
 
+  useEffect(() => {
+    if (won && timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, [won]);
+
   const handleClick = useCallback(
     (i: number) => {
       if (locked.current) return;
       if (!cards[i]) return;
       if (matched.has(i) || flipped.has(i)) return;
       if (selected.length >= 2) return;
+
+      if (!gameStarted.current) {
+        gameStarted.current = true;
+        timerRef.current = setInterval(() => setTime((t) => t + 1), 1000);
+      }
 
       const newFlipped = new Set(flipped).add(i);
       const newSelected = [...selected, i];
@@ -166,6 +187,7 @@ export function StaggeredGrid() {
         } else {
           // Mismatch
           locked.current = true;
+          setMistakes((m) => m + 1);
           setFlash({ indices: [a, b], kind: "fail" });
           setBgMode("fail");
           setTimeout(() => {
@@ -188,6 +210,8 @@ export function StaggeredGrid() {
 
   const { columns, rows } = dims;
   const gridTotal = columns * rows;
+  const mm = String(Math.floor(time / 60)).padStart(2, "0");
+  const ss = String(time % 60).padStart(2, "0");
 
   return (
     <div className="relative w-full h-full overflow-hidden">
@@ -225,6 +249,54 @@ export function StaggeredGrid() {
           transition: "opacity 300ms ease",
         }}
       />
+
+      {/* HUD */}
+      <div
+        style={{
+          position: "absolute",
+          top: "0",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 10,
+          display: "flex",
+          gap: "0.75rem",
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            padding: "0.3rem 0.8rem",
+            borderRadius: "2rem",
+            background: "rgba(0,0,0,0.45)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            backdropFilter: "blur(6px)",
+            color: "white",
+            fontSize: "0.78rem",
+            fontWeight: 600,
+            fontFamily: "monospace",
+            letterSpacing: "0.04em",
+          }}
+        >
+          ⏱ {mm}:{ss}
+        </div>
+        <div
+          style={{
+            padding: "0.3rem 0.8rem",
+            borderRadius: "2rem",
+            background: mistakes > 0 ? "rgba(180,0,40,0.5)" : "rgba(0,0,0,0.45)",
+            border: `1px solid ${mistakes > 0 ? "rgba(255,80,80,0.4)" : "rgba(255,255,255,0.15)"}`,
+            backdropFilter: "blur(6px)",
+            color: "white",
+            fontSize: "0.78rem",
+            fontWeight: 600,
+            fontFamily: "monospace",
+            letterSpacing: "0.04em",
+            transition: "background 300ms ease, border 300ms ease",
+          }}
+        >
+          ✕ {mistakes} {mistakes === 1 ? "mistake" : "mistakes"}
+        </div>
+      </div>
 
       {/* Card grid */}
       <div
@@ -385,10 +457,47 @@ export function StaggeredGrid() {
               style={{
                 color: "rgba(255,255,255,0.65)",
                 fontSize: "1rem",
-                marginBottom: "1.8rem",
+                marginBottom: "1rem",
               }}
             >
               You matched every pair.
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: "1rem",
+                justifyContent: "center",
+                marginBottom: "1.8rem",
+              }}
+            >
+              <div
+                style={{
+                  padding: "0.4rem 1rem",
+                  borderRadius: "2rem",
+                  background: "rgba(255,255,255,0.1)",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  color: "white",
+                  fontSize: "0.85rem",
+                  fontFamily: "monospace",
+                  fontWeight: 600,
+                }}
+              >
+                ⏱ {mm}:{ss}
+              </div>
+              <div
+                style={{
+                  padding: "0.4rem 1rem",
+                  borderRadius: "2rem",
+                  background: mistakes === 0 ? "rgba(0,200,100,0.2)" : "rgba(180,0,40,0.3)",
+                  border: `1px solid ${mistakes === 0 ? "rgba(0,200,100,0.4)" : "rgba(255,80,80,0.3)"}`,
+                  color: "white",
+                  fontSize: "0.85rem",
+                  fontFamily: "monospace",
+                  fontWeight: 600,
+                }}
+              >
+                ✕ {mistakes} {mistakes === 1 ? "mistake" : "mistakes"}
+              </div>
             </div>
             <button
               onClick={startGame}
