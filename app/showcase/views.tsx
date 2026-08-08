@@ -2,8 +2,6 @@
 
 import {
   GodlyMusic,
-  GodlyClips,
-  GodlyWeather,
   GodlyGifs,
   StaggeredGrid,
   DynamicFormBuilder,
@@ -61,91 +59,6 @@ export const VIEWS: ViewDef[] = [
       </div>
     ),
     component: <GodlyMusic />,
-  },
-  {
-    id: "clips",
-    label: "CLIPS",
-    description: "Pexels video wall · infinite scroll",
-    glowColor: "#e85d7a",
-    preview: (
-      <div
-        className="w-full h-full relative overflow-hidden"
-        style={{ background: "#111" }}
-      >
-        {[
-          { x: 8, y: 8, w: 54, h: 36 },
-          { x: 70, y: 8, w: 54, h: 52 },
-          { x: 8, y: 52, w: 54, h: 28 },
-          { x: 70, y: 68, w: 54, h: 28 },
-          { x: 8, y: 88, w: 54, h: 36 },
-          { x: 70, y: 104, w: 54, h: 28 },
-        ].map((r, i) => (
-          <div
-            key={i}
-            className="absolute rounded-md flex items-center justify-center"
-            style={{
-              left: r.x,
-              top: r.y,
-              width: r.w,
-              height: r.h,
-              background: `rgba(255,255,255,${0.08 + (i % 3) * 0.04})`,
-              border: "1px solid rgba(255,255,255,0.14)",
-            }}
-          >
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 10 10"
-              fill="rgba(255,255,255,0.45)"
-            >
-              <polygon points="2,1 9,5 2,9" />
-            </svg>
-          </div>
-        ))}
-      </div>
-    ),
-    component: <GodlyClips />,
-  },
-  {
-    id: "weather",
-    label: "WEATHER",
-    description: "Live weather for 50 cities worldwide",
-    glowColor: "#5aaff0",
-    preview: (
-      <div
-        className="w-full h-full relative overflow-hidden"
-        style={{ background: "#080f1a" }}
-      >
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% 30%, rgba(30,100,220,0.55) 0%, transparent 70%)",
-          }}
-        />
-        {[
-          { x: 10, y: 12, label: "New York  22°" },
-          { x: 10, y: 34, label: "London  15°" },
-          { x: 10, y: 56, label: "Tokyo  28°" },
-          { x: 10, y: 78, label: "Paris  18°" },
-        ].map((r, i) => (
-          <div
-            key={i}
-            className="absolute font-mono"
-            style={{
-              left: r.x,
-              top: r.y,
-              fontSize: 8,
-              color: `rgba(255,255,255,${0.85 - i * 0.1})`,
-              letterSpacing: "0.05em",
-            }}
-          >
-            {r.label}
-          </div>
-        ))}
-      </div>
-    ),
-    component: <GodlyWeather />,
   },
   {
     id: "gifs",
@@ -276,9 +189,15 @@ export const VIEWS: ViewDef[] = [
         style={{ background: "#131313" }}
       >
         {[
-          ["#4a4a4e","#c9af3b","#538d4e","#4a4a4e","#4a4a4e"],
-          ["#538d4e","#538d4e","#4a4a4e","#c9af3b","#4a4a4e"],
-          ["rgba(255,255,255,0.18)","rgba(255,255,255,0.18)","rgba(255,255,255,0.18)","rgba(255,255,255,0.18)","rgba(255,255,255,0.18)"],
+          ["#4a4a4e", "#c9af3b", "#538d4e", "#4a4a4e", "#4a4a4e"],
+          ["#538d4e", "#538d4e", "#4a4a4e", "#c9af3b", "#4a4a4e"],
+          [
+            "rgba(255,255,255,0.18)",
+            "rgba(255,255,255,0.18)",
+            "rgba(255,255,255,0.18)",
+            "rgba(255,255,255,0.18)",
+            "rgba(255,255,255,0.18)",
+          ],
         ].map((row, r) => (
           <div
             key={r}

@@ -70,6 +70,49 @@ const GRADS: [string, string][] = [
   ["#001010", "#002020"],
 ];
 
+// ── Play history (localStorage) ───────────────────────────────────────────────
+// Album indices are unstable across loads (the iTunes fetch shuffles), so we
+// persist the track itself and match back to the grid by previewUrl.
+const HISTORY_KEY = "godly-music:history";
+const HISTORY_LIMIT = 50;
+
+type HistoryEntry = {
+  artist: string;
+  track: string;
+  title: string;
+  artUrl: string;
+  previewUrl: string;
+  playedAt: number;
+};
+
+function readHistory(): HistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? (parsed as HistoryEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeHistory(list: HistoryEntry[]) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  } catch {
+    // Quota / private-mode — history is best-effort
+  }
+}
+
+function timeAgo(ts: number) {
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 async function fetchAllAlbums(): Promise<(Album | null)[]> {
   // Fetch each artist once with attribute=artistTerm, using the declared count
   const artistResults = new Map<string, Record<string, unknown>[]>();
@@ -345,9 +388,37 @@ export function GodlyMusic() {
   const playlistRef = useRef<number[]>([]); // album indices
   const playlistPosRef = useRef<number>(-1);
   const [playerAlbumIdx, setPlayerAlbumIdx] = useState<number | null>(null);
+  const [playerTrack, setPlayerTrack] = useState<Album | null>(null);
   const [playerPlaying, setPlayerPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0–1
   const progressRafRef = useRef<number>(0);
+
+  // ── History state ───────────────────────────────────────────────────────────
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    setHistory(readHistory());
+  }, []);
+
+  const recordPlay = (album: Album) => {
+    setHistory((prev) => {
+      const entry: HistoryEntry = {
+        artist: album.artist,
+        track: album.track,
+        title: album.title,
+        artUrl: album.artUrl,
+        previewUrl: album.previewUrl,
+        playedAt: Date.now(),
+      };
+      const next = [
+        entry,
+        ...prev.filter((h) => h.previewUrl !== album.previewUrl),
+      ].slice(0, HISTORY_LIMIT);
+      writeHistory(next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchAllAlbums().then((albums) => {
@@ -363,22 +434,9 @@ export function GodlyMusic() {
     });
   }, []);
 
-  // ── Core play-by-album-index (used by canvas clicks + player) ──────────────
-  const playAlbumDirect = (idx: number, fromPlayer = false) => {
-    const album = albumsRef.current[idx];
-    if (!album?.previewUrl) return;
-
-    if (playingIdx.current === idx && !fromPlayer) {
-      // Toggle off from canvas click
-      audioRef.current?.pause();
-      audioRef.current = null;
-      playingIdx.current = null;
-      setPlayingId(null);
-      setPlayerPlaying(false);
-      cancelAnimationFrame(progressRafRef.current);
-      return;
-    }
-
+  // ── Core audio start — idx is the grid index, or null for off-grid tracks
+  // replayed from history ──────────────────────────────────────────────────────
+  const startTrack = (album: Album, idx: number | null) => {
     audioRef.current?.pause();
     cancelAnimationFrame(progressRafRef.current);
 
@@ -418,8 +476,70 @@ export function GodlyMusic() {
     playingIdx.current = idx;
     setPlayingId(idx);
     setPlayerAlbumIdx(idx);
+    setPlayerTrack(album);
     setPlayerPlaying(true);
     setProgress(0);
+    recordPlay(album);
+  };
+
+  const playAlbumDirect = (idx: number, fromPlayer = false) => {
+    const album = albumsRef.current[idx];
+    if (!album?.previewUrl) return;
+
+    if (playingIdx.current === idx && !fromPlayer) {
+      // Toggle off from canvas click
+      audioRef.current?.pause();
+      audioRef.current = null;
+      playingIdx.current = null;
+      setPlayingId(null);
+      setPlayerPlaying(false);
+      cancelAnimationFrame(progressRafRef.current);
+      return;
+    }
+
+    startTrack(album, idx);
+  };
+
+  // Replay from history: prefer the live grid entry so next/prev still work,
+  // otherwise play the stored preview on its own.
+  const playHistoryEntry = (entry: HistoryEntry) => {
+    if (!entry.previewUrl) return;
+    const idx = albumsRef.current.findIndex(
+      (a) => a?.previewUrl === entry.previewUrl,
+    );
+    const gridAlbum = idx >= 0 ? albumsRef.current[idx] : null;
+    if (gridAlbum) {
+      // Re-scope the playlist to this artist, same as a canvas click. Always
+      // restarts rather than toggling — a history row means "play this".
+      const artistList = albumsRef.current
+        .map((a, i) => ({ a, i }))
+        .filter(({ a }) => a?.artist === gridAlbum.artist)
+        .map(({ i }) => i);
+      playlistRef.current = artistList;
+      playlistPosRef.current = artistList.indexOf(idx);
+      startTrack(gridAlbum, idx);
+      return;
+    }
+    // Off-grid: clear the playlist so "ended" doesn't jump into a stale list
+    playlistRef.current = [];
+    playlistPosRef.current = -1;
+    startTrack(
+      {
+        artist: entry.artist,
+        track: entry.track,
+        title: entry.title,
+        year: "",
+        artUrl: entry.artUrl,
+        previewUrl: entry.previewUrl,
+        grad: GRADS[0],
+      },
+      null,
+    );
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    writeHistory([]);
   };
 
   const playAlbum = (idx: number) => {
@@ -698,8 +818,7 @@ export function GodlyMusic() {
 
       {/* ── Audio player ──────────────────────────────────────────────────── */}
       {(() => {
-        const album =
-          playerAlbumIdx !== null ? albumsRef.current[playerAlbumIdx] : null;
+        const album = playerTrack;
         return (
           <div
             className={playerPlaying ? "player-border-glow" : ""}
@@ -726,12 +845,10 @@ export function GodlyMusic() {
                 className="w-9 h-9 flex-shrink-0 overflow-hidden"
                 style={{ border: "1px solid rgba(255,255,255,0.08)" }}
               >
-                {album &&
-                playerAlbumIdx !== null &&
-                imgsRef.current[playerAlbumIdx]?.src ? (
+                {album?.artUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={imgsRef.current[playerAlbumIdx]!.src}
+                    src={album.artUrl}
                     alt={album.title}
                     className="w-full h-full object-cover"
                   />
@@ -888,6 +1005,146 @@ export function GodlyMusic() {
           </div>
         );
       })()}
+
+      {/* ── Recently played ───────────────────────────────────────────────── */}
+      <div
+        onWheel={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        style={{ position: "fixed", right: 16, bottom: 92 }}
+      >
+        {historyOpen && (
+          <div
+            className="absolute right-0 flex flex-col"
+            style={{
+              bottom: "calc(100% + 8px)",
+              width: 280,
+              maxHeight: 320,
+              backgroundColor: "rgba(8,8,8,0.94)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            <div
+              className="flex items-center justify-between px-3 py-2 shrink-0"
+              style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              <span className="font-mono text-[9px] uppercase tracking-widest text-white/50">
+                Recently played
+              </span>
+              {history.length > 0 && (
+                <button
+                  onClick={clearHistory}
+                  className="font-mono text-[9px] uppercase tracking-widest text-white/30 hover:text-white/60"
+                  title="Clear history"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            <div className="overflow-y-auto">
+              {history.length === 0 ? (
+                <p className="px-3 py-4 font-mono text-[10px] text-white/30">
+                  Nothing yet — play a track.
+                </p>
+              ) : (
+                history.map((h) => {
+                  const isCurrent = playerTrack?.previewUrl === h.previewUrl;
+                  return (
+                    <button
+                      key={`${h.previewUrl}-${h.playedAt}`}
+                      onClick={() => playHistoryEntry(h)}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-white/5"
+                      style={{
+                        backgroundColor: isCurrent
+                          ? "rgba(77,150,217,0.12)"
+                          : undefined,
+                      }}
+                      title={`${h.artist} — ${h.track}`}
+                    >
+                      <div
+                        className="w-7 h-7 shrink-0 overflow-hidden"
+                        style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        {h.artUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={h.artUrl}
+                            alt={h.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="w-full h-full"
+                            style={{ background: "rgba(255,255,255,0.04)" }}
+                          />
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span
+                          className="font-mono text-[10px] truncate leading-tight"
+                          style={{ color: isCurrent ? "#4D96D9" : "#fff" }}
+                        >
+                          {h.track}
+                        </span>
+                        <span className="font-mono text-[9px] text-white/40 truncate leading-tight">
+                          {h.artist} · {timeAgo(h.playedAt)}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => setHistoryOpen((o) => !o)}
+          className="w-10 h-10 flex items-center justify-center relative"
+          style={{
+            backgroundColor: "rgba(8,8,8,0.88)",
+            backdropFilter: "blur(20px)",
+            border: `1px solid ${historyOpen ? "rgba(77,150,217,0.6)" : "rgba(255,255,255,0.1)"}`,
+            color: historyOpen ? "#4D96D9" : "rgba(255,255,255,0.6)",
+          }}
+          title="Recently played"
+          aria-expanded={historyOpen}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle
+              cx="8"
+              cy="8"
+              r="6.25"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M8 4.5V8l2.5 1.5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {history.length > 0 && (
+            <span
+              className="absolute font-mono text-[8px] flex items-center justify-center"
+              style={{
+                top: -6,
+                right: -6,
+                minWidth: 15,
+                height: 15,
+                padding: "0 3px",
+                backgroundColor: "#4D96D9",
+                color: "#000",
+              }}
+            >
+              {history.length}
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   );
 }

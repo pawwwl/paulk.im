@@ -2,11 +2,10 @@ import {
   LocationCard,
   Calendar,
   ChatWidget,
-  HireSection,
   PixelImage,
   ProfileWave,
   GlitchText,
-  TimelineSectionV2,
+  TimelineSection,
   MusicCard,
   ShowcaseSection,
 } from "@/components/main";
@@ -58,7 +57,7 @@ export default function Home() {
           {/* <!-- Chat Interface Component --> */}
         </div>
       </section>
-      <TimelineSectionV2 />
+      <TimelineSection />
       {/* <!-- Bento Grid: Tech-centric Artifacts --> */}
       <section className="mb-20">
         <div className="flex items-center justify-between mb-10">
@@ -109,7 +108,7 @@ export default function Home() {
           {/* <!-- Location --> */}
           <LocationCard />
 
-          <div className="md:col-span-2 overflow-hidden relative min-h-62.5 player-border-glow">
+          <div className="md:col-span-2 overflow-hidden relative min-h-100 md:min-h-62.5 player-border-glow">
             <MusicCard />
             <div className="absolute top-4 left-4">
               <span className="bg-pink-600/90 text-on-primary px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest">
@@ -125,6 +124,7 @@ export default function Home() {
           {/* <WaveTick /> */}
         </div>
       </section>
+      <ShowcaseSection />
       <section>
         <div className="mb-20">
           <div className="flex items-center justify-between mb-10">
@@ -139,8 +139,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <ShowcaseSection />
-      <HireSection />
       {/* </main> */}
     </>
   );

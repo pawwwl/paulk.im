@@ -99,7 +99,7 @@ export function TimelineSection() {
   const yLast = nodeYs[N] ?? svgH;
 
   return (
-    <div className="mx-auto my-50 max-w-2xl px-6 lg:px-8">
+    <div className="mx-auto my-50 max-w-5xl px-6 lg:px-8">
       <div ref={containerRef} className="relative">
         {/* ── SVG layer ──────────────────────────────────────────────────── */}
         {nodeYs.length > 0 && svgW > 0 && (
@@ -196,7 +196,8 @@ export function TimelineSection() {
               const x1 = isRight ? cx + CONN_LEN : cx - CONN_LEN;
 
               return (
-                <g key={i}>
+                // Node graphics are desktop-only — on mobile they'd sit behind the text
+                <g key={i} className="hidden sm:block">
                   {/* Ghost connector */}
                   <line
                     x1={cx}
@@ -384,13 +385,13 @@ export function TimelineSection() {
               >
                 {/* Colored rule */}
                 <div className="h-px w-10 mb-3" style={{ background: color }} />
-                <p className="font-headline font-bold text-sm text-on-surface tracking-tight leading-snug mb-1">
+                <p className="font-headline font-bold text-2xl text-on-surface tracking-tight leading-snug mb-1">
                   {item.name}
                 </p>
-                <p className="font-mono text-[11px] italic text-accent-pink mb-2.5">
+                <p className="font-mono text-[15px] italic text-accent-pink mb-2.5">
                   {item.role}
                 </p>
-                <p className="font-mono text-[11px] text-on-surface-variant leading-relaxed">
+                <p className="font-mono text-[15px] text-on-surface-variant leading-relaxed">
                   {item.description}
                 </p>
                 {item.tools && (
@@ -423,10 +424,10 @@ export function TimelineSection() {
                 }}
               >
                 <div className="h-px w-10 mb-3" style={{ background: color }} />
-                <p className="font-headline font-bold text-sm text-on-surface tracking-tight leading-snug mb-1">
+                <p className="font-headline font-bold text-2xl text-on-surface tracking-tight leading-snug mb-1">
                   {item.name}
                 </p>
-                <p className="font-mono text-[11px] italic text-accent-pink">
+                <p className="font-mono text-[15px] italic text-accent-pink">
                   {item.role}
                 </p>
               </div>
@@ -439,7 +440,7 @@ export function TimelineSection() {
                   transform: `translateY(${(1 - cp) * 8}px)`,
                 }}
               >
-                <p className="font-mono text-[11px] text-on-surface-variant leading-relaxed">
+                <p className="font-mono text-[15px] text-on-surface-variant leading-relaxed">
                   {item.description}
                 </p>
                 {item.tools && (
@@ -473,8 +474,12 @@ export function TimelineSection() {
                   }}
                 >
                   {/* ── Mobile top row ── */}
-                  <div className="sm:hidden flex items-center justify-between">
-                    <div style={{ color, opacity: np }}>
+                  <div className="sm:hidden flex items-center justify-between gap-4">
+                    <div>{headerEl}</div>
+                    <div
+                      className="shrink-0 text-right"
+                      style={{ color, opacity: np }}
+                    >
                       <p className="text-[10px] font-mono tracking-[0.25em] opacity-60 mb-1">
                         {month}
                       </p>
@@ -482,7 +487,6 @@ export function TimelineSection() {
                         {year}
                       </p>
                     </div>
-                    <div>{headerEl}</div>
                   </div>
 
                   {/* ── Desktop layout ── */}
